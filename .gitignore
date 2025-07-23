@@ -1,0 +1,29 @@
+# Generated rule files
+.roo/rules/coding-standards.md
+.roo/rules-code/implementation-rules.md
+.roo/rules-architect/architecture-rules.md
+.roo/rules-debug/debugging-rules.md
+.roo/rules-docs-extractor/documentation-rules.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
