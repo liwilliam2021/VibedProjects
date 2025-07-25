@@ -6,7 +6,6 @@ import logging
 import json
 import traceback
 from typing import Optional, Callable, Any, List
-from queue import Queue
 import sys
 sys.path.append('..')
 from queue.job_queue import JobQueue
