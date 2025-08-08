@@ -1,0 +1,75 @@
+{
+  "extraction": {
+    "patterns": {
+      "persistent_rule": "(?i)(always|must|should|never)\\s+(\\w+.*?)(?:\\.|$)",
+      "naming_rule": "(?i)(use|prefer|follow)\\s+(camelCase|snake_case|PascalCase|kebab-case)\\s+(?:for\\s+)?(\\w+)",
+      "style_rule": "(?i)(use|prefer)\\s+(\\d+|tabs?)\\s+(spaces?|tabs?)\\s+(?:for\\s+)?(?:indentation|indent)",
+      "structure_rule": "(?i)(organize|group|keep|separate)\\s+(\\w+.*?)\\s+(?:by|in|together)",
+      "behavior_rule": "(?i)(always|never|prefer)\\s+(\\w+.*?)\\s+(?:before|after|when|over)\\s+(\\w+.*?)(?:\\.|$)",
+      "convention_rule": "(?i)(?:convention|standard|format|style)\\s+(?:is|should be|must be)\\s+(\\w+.*?)(?:\\.|$)"
+    },
+    "confidence_threshold": 0.7
+  },
+  "storage_decision": {
+    "criteria_weights": {
+      "cross_session_value": 0.3,
+      "stability": 0.25,
+      "clear_triggers": 0.2,
+      "reduces_inconsistency": 0.15,
+      "specificity": 0.05,
+      "confidence": 0.05
+    },
+    "storage_threshold": 0.7
+  },
+  "retrieval": {
+    "similarity_threshold": 0.8,
+    "max_rules_per_task": 10,
+    "index_update_frequency": 100,
+    "cache_size": 1000
+  },
+  "drift_reduction": {
+    "metrics": ["naming_consistency", "style_consistency", "structure_consistency"],
+    "improvement_threshold": 0.1,
+    "comparison_samples": 5,
+    "consistency_weights": {
+      "naming": 0.4,
+      "style": 0.3,
+      "structure": 0.3
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json",
+    "output_dir": "data/logs",
+    "max_file_size_mb": 100,
+    "backup_count": 5
+  },
+  "data_generation": {
+    "seed": 42,
+    "default_transcript_segments": 20,
+    "default_session_duration": 1800,
+    "rule_mix_presets": {
+      "balanced": {
+        "persistent": 0.4,
+        "short_term": 0.3,
+        "irrelevant": 0.3
+      },
+      "persistent_heavy": {
+        "persistent": 0.6,
+        "short_term": 0.2,
+        "irrelevant": 0.2
+      },
+      "noisy": {
+        "persistent": 0.2,
+        "short_term": 0.2,
+        "irrelevant": 0.6
+      }
+    }
+  },
+  "evaluation": {
+    "metrics_output_dir": "data/results/metrics",
+    "reports_output_dir": "data/results/reports",
+    "batch_size": 10,
+    "similarity_threshold": 0.7
+  }
+}
