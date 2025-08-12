@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enemy Movement Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #2a2a2a;
+            color: white;
+        }
+        canvas {
+            border: 2px solid #444;
+            display: block;
+            margin: 20px auto;
+            background: #1a1a1a;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .info {
+            text-align: center;
+            margin: 10px;
+            font-size: 14px;
+        }
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 10px;
+        }
+        .stat {
+            padding: 5px 10px;
+            background: #333;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Enemy Movement Test Suite</h1>
+    <div class="info">
+        This test verifies that enemy movement is smooth and follows the path correctly.
+    </div>
+    
+    <div class="controls">
+        <button onclick="spawnSingleEnemy()">Spawn Single Enemy</button>
+        <button onclick="spawnWave()">Spawn Wave (10)</button>
+        <button onclick="spawnMultiPath()">Test Multi-Path</button>
+        <button onclick="testKnockback()">Test Knockback</button>
+        <button onclick="toggleSpeed()">Toggle Speed (1x/2x)</button>
+        <button onclick="clearEnemies()">Clear All</button>
+    </div>
+    
+    <div class="stats">
+        <div class="stat">Enemies: <span id="enemyCount">0</span></div>
+        <div class="stat">Speed: <span id="speedDisplay">1x</span></div>
+        <div class="stat">FPS: <span id="fps">60</span></div>
+        <div class="stat">Path Errors: <span id="pathErrors">0</span></div>
+    </div>
+    
+    <canvas id="testCanvas" width="800" height="600"></canvas>
+    
+    <div class="info" id="testResults">
+        Test Results: <span style="color: #4CAF50;">Ready</span>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+        
+        let gameSpeed = 1;
+        let enemies = [];
+        let pathErrors = 0;
+        let enemyIdSeq = 1;
+        
+        // Test paths
+        const testPaths = {
+            simple: [
+                {x: 50, y: 300},
+                {x: 200, y: 300},
+                {x: 200, y: 150},
+                {x: 400, y: 150},
+                {x: 400, y: 450},
+                {x: 600, y: 450},
+                {x: 600, y: 300},
+                {x: 750, y: 300}
+            ],
+            upper: [
+                {x: 50, y: 100},
+                {x: 200, y: 100},
+                {x: 200, y: 200},
+                {x: 400, y: 200},
+                {x: 400, y: 100},
+                {x: 750, y: 100}
+            ],
+            lower: [
+                {x: 50, y: 500},
+                {x: 200, y: 500},
+                {x: 200, y: 400},
+                {x: 400, y: 400},
+                {x: 400, y: 500},
+                {x: 750, y: 500}
+            ]
+        };
+        
+        let currentPaths = [testPaths.simple];
+        
+        // Utility functions
+        function normalize(dx, dy) {
+            const d = Math.hypot(dx, dy) || 1;
+            return {x: dx/d, y: dy/d};
+        }
+        
+        // Enemy class with fixed movement
+        class TestEnemy {
+            constructor(hp, speed, path) {
+                this.id = enemyIdSeq++;
+                this.hp = hp;
+                this.maxHp = hp;
+                this.baseSpeed = speed;
+                this.radius = 10;
+                this.path = path;
+                this.waypoint = 0;
+                this.x = path[0].x;
+                this.y = path[0].y;
+                this.alive = true;
+                this.slowFactor = 1;
+                this.stunTimer = 0;
+                this.color = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                this.pathDeviation = 0; // Track max deviation from path
+            }
+            
+            get nextTarget() {
+                return this.path[this.waypoint + 1] || null;
+            }
+            
+            get currentWaypoint() {
+                return this.path[this.waypoint] || null;
+            }
+            
+            knockback(distance) {
+                if (this.waypoint <= 0) return;
+                
+                const a = this.path[this.waypoint];
+                const b = this.path[this.waypoint + 1] || a;
+                
+                let dir = normalize(b.x - a.x, b.y - a.y);
+                const newX = this.x - dir.x * distance;
+                const newY = this.y - dir.y * distance;
+                
+                if (this.waypoint > 0) {
+                    const prev = this.path[this.waypoint - 1];
+                    const distToPrev = Math.hypot(newX - prev.x, newY - prev.y);
+                    const distCurrToPrev = Math.hypot(a.x - prev.x, a.y - prev.y);
+                    
+                    if (distToPrev < distCurrToPrev) {
+                        this.waypoint--;
+                        const prevDir = normalize(a.x - prev.x, a.y - prev.y);
+                        const remainingDist = distance - Math.hypot(this.x - a.x, this.y - a.y);
+                        this.x = a.x - prevDir.x * Math.min(remainingDist, distCurrToPrev * 0.9);
+                        this.y = a.y - prevDir.y * Math.min(remainingDist, distCurrToPrev * 0.9);
+                    } else {
+                        this.x = newX;
+                        this.y = newY;
+                    }
+                } else {
+                    const maxBack = Math.hypot(this.x - a.x, this.y - a.y) * 0.9;
+                    const actualDist = Math.min(distance, maxBack);
+                    this.x -= dir.x * actualDist;
+                    this.y -= dir.y * actualDist;
+                }
+            }
+            
+            update(dt) {
+                if (!this.alive) return;
+                
+                if (this.stunTimer > 0) {
+                    this.stunTimer -= dt;
+                    return;
+                }
+                
+                const target = this.nextTarget;
+                if (!target) {
+                    if (this.waypoint >= this.path.length - 1) {
+                        this.alive = false;
+                    }
+                    return;
+                }
+                
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const distToTarget = Math.hypot(dx, dy);
+                
+                const speed = this.baseSpeed * this.slowFactor * gameSpeed;
+                const moveDistance = speed * dt;
+                
+                if (distToTarget <= moveDistance + 2) {
+                    this.x = target.x;
+                    this.y = target.y;
+                    this.waypoint++;
+                    
+                    if (this.waypoint >= this.path.length - 1) {
+                        this.alive = false;
+                        return;
+                    }
+                    
+                    const remainingMove = moveDistance - distToTarget;
+                    if (remainingMove > 0 && this.nextTarget) {
+                        const newTarget = this.nextTarget;
+                        const ndx = newTarget.x - this.x;
+                        const ndy = newTarget.y - this.y;
+                        const ndist = Math.hypot(ndx, ndy);
+                        if (ndist > 0) {
+                            this.x += (ndx / ndist) * Math.min(remainingMove, ndist);
+                            this.y += (ndy / ndist) * Math.min(remainingMove, ndist);
+                        }
+                    }
+                } else {
+                    const moveX = (dx / distToTarget) * moveDistance;
+                    const moveY = (dy / distToTarget) * moveDistance;
+                    this.x += moveX;
+                    this.y += moveY;
+                }
+                
+                this.validatePosition();
+            }
+            
+            validatePosition() {
+                if (!this.currentWaypoint || !this.nextTarget) return;
+                
+                const curr = this.currentWaypoint;
+                const next = this.nextTarget;
+                
+                const segX = next.x - curr.x;
+                const segY = next.y - curr.y;
+                const segLenSq = segX * segX + segY * segY;
+                
+                if (segLenSq > 0) {
+                    const t = Math.max(0, Math.min(1,
+                        ((this.x - curr.x) * segX + (this.y - curr.y) * segY) / segLenSq
+                    ));
+                    
+                    const projX = curr.x + t * segX;
+                    const projY = curr.y + t * segY;
+                    
+                    const distFromPath = Math.hypot(this.x - projX, this.y - projY);
+                    this.pathDeviation = Math.max(this.pathDeviation, distFromPath);
+                    
+                    if (distFromPath > 5) {
+                        this.x = projX;
+                        this.y = projY;
+                        pathErrors++;
+                        document.getElementById('pathErrors').textContent = pathErrors;
+                    }
+                }
+            }
+            
+            draw(ctx) {
+                if (!this.alive) return;
+                
+                ctx.save();
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw HP bar
+                const w = 24;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(this.x - w/2, this.y - 16, w, 4);
+                ctx.fillStyle = '#6af';
+                const pct = Math.max(0, this.hp / this.maxHp);
+                ctx.fillRect(this.x - w/2, this.y - 16, w * pct, 4);
+                
+                // Draw ID
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.id, this.x, this.y + 3);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Test functions
+        function spawnSingleEnemy() {
+            const enemy = new TestEnemy(100, 100, currentPaths[0]);
+            enemies.push(enemy);
+            updateStats();
+        }
+        
+        function spawnWave() {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    const pathIdx = Math.floor(Math.random() * currentPaths.length);
+                    const enemy = new TestEnemy(100, 80 + Math.random() * 40, currentPaths[pathIdx]);
+                    enemies.push(enemy);
+                    updateStats();
+                }, i * 500);
+            }
+        }
+        
+        function spawnMultiPath() {
+            currentPaths = [testPaths.upper, testPaths.lower];
+            document.getElementById('testResults').innerHTML = 'Test Results: <span style="color: #FFC107;">Testing multi-path movement</span>';
+            
+            for (let i = 0; i < 6; i++) {
+                setTimeout(() => {
+                    const pathIdx = i % 2;
+                    const enemy = new TestEnemy(100, 100, currentPaths[pathIdx]);
+                    enemies.push(enemy);
+                    updateStats();
+                }, i * 300);
+            }
+        }
+        
+        function testKnockback() {
+            const enemy = new TestEnemy(100, 50, testPaths.simple);
+            enemy.x = 300;
+            enemy.y = 300;
+            enemy.waypoint = 2;
+            enemies.push(enemy);
+            
+            setTimeout(() => {
+                enemy.knockback(50);
+                document.getElementById('testResults').innerHTML = 'Test Results: <span style="color: #2196F3;">Knockback applied</span>';
+            }, 1000);
+            
+            updateStats();
+        }
+        
+        function toggleSpeed() {
+            gameSpeed = gameSpeed === 1 ? 2 : 1;
+            document.getElementById('speedDisplay').textContent = gameSpeed + 'x';
+        }
+        
+        function clearEnemies() {
+            enemies = [];
+            pathErrors = 0;
+            document.getElementById('pathErrors').textContent = '0';
+            updateStats();
+        }
+        
+        function updateStats() {
+            document.getElementById('enemyCount').textContent = enemies.filter(e => e.alive).length;
+        }
+        
+        // Draw functions
+        function drawPath(path, color = '#3f694a', width = 12) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i].x, path[i].y);
+            }
+            ctx.stroke();
+            
+            // Draw waypoints
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < path.length; i++) {
+                ctx.beginPath();
+                ctx.arc(path[i].x, path[i].y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        // Game loop
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let fpsTime = 0;
+        
+        function loop(currentTime) {
+            const dt = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            // FPS calculation
+            frameCount++;
+            fpsTime += dt;
+            if (fpsTime >= 1) {
+                document.getElementById('fps').textContent = Math.round(frameCount / fpsTime);
+                frameCount = 0;
+                fpsTime = 0;
+            }
+            
+            // Update
+            for (const enemy of enemies) {
+                enemy.update(dt);
+            }
+            
+            // Remove dead enemies
+            enemies = enemies.filter(e => e.alive);
+            updateStats();
+            
+            // Draw
+            ctx.clearRect(0, 0, W, H);
+            
+            // Draw paths
+            for (const path of currentPaths) {
+                drawPath(path);
+            }
+            
+            // Draw enemies
+            for (const enemy of enemies) {
+                enemy.draw(ctx);
+            }
+            
+            // Check for issues
+            if (pathErrors > 10) {
+                document.getElementById('testResults').innerHTML = 'Test Results: <span style="color: #f44336;">Path following errors detected!</span>';
+            } else if (enemies.length > 0 && pathErrors === 0) {
+                document.getElementById('testResults').innerHTML = 'Test Results: <span style="color: #4CAF50;">Movement working correctly</span>';
+            }
+            
+            requestAnimationFrame(loop);
+        }
+        
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

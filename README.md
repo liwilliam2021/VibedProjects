@@ -1,2 +1,2 @@
 # VibedProjects
-Feature test repo for vibed coded repos w/ Roo Code
+Feature test repo for vibed coded projects w/ Roo Code
