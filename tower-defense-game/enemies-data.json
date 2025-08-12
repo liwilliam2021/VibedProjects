@@ -1,0 +1,166 @@
+{
+  "lore": {
+    "title": "The Lost Expedition",
+    "story": "In 1897, Leopold II's most ambitious expedition pushed beyond the mapped territories of the Congo Free State, seeking new lands to exploit. Led by the ruthless Colonel Van Der Meer, they discovered a hidden valley shrouded in perpetual mist - an alleged bridge to the earth's core. What they found defied all reason: living dinosaurs, preserved by unique volcanic conditions and evolved over millions of years in isolation. The expedition's greed overcame their terror-- and now they advance upon the gorge."
+  },
+  "enemies": {
+    "conscript": {
+      "name": "Force Publique Conscript",
+      "hp": 30,
+      "speed": 60,
+      "reward": 10,
+      "type": "Basic",
+      "appearance": "Light infantry in worn khaki uniforms",
+      "strategy": "The most common enemy. Weak individually but dangerous in large numbers. Focus fire to prevent them from overwhelming your defenses.",
+      "lore": "Forcibly recruited from local villages, these conscripts march under the brutal command of the Force Publique. Many carry the scars of the chicotte whip, driving them forward out of fear rather than loyalty. They advance in desperate waves, knowing that retreat means certain death.",
+      "historicalNote": "The Force Publique was the military force of the Congo Free State, notorious for its harsh discipline and exploitation of local populations.",
+      "funFact": "These conscripts have been known to 'accidentally' drop their rifles when passing by friendly dinosaur towers, claiming the weapons were 'eaten by a very small T-Rex'."
+    },
+    "rifleman": {
+      "name": "Belgian Rifleman",
+      "hp": 50,
+      "speed": 55,
+      "reward": 15,
+      "type": "Ranged",
+      "appearance": "Colonial troops with Albini rifles",
+      "strategy": "Moderate health but slower movement. Their rifles can't penetrate dinosaur armor, but they're persistent. Use area damage to clear groups.",
+      "lore": "Professional soldiers sent from Brussels to enforce Leopold II's rubber quotas. They march in formation, their Albini rifles gleaming in the sun. Each carries a pouch of severed hands - grim trophies proving they haven't wasted ammunition.",
+      "historicalNote": "The Albini rifle was standard issue for Belgian colonial forces. The practice of collecting hands as proof of kills was a horrific reality of the Congo Free State.",
+      "funFact": "Their rifles are so outdated that Pteranodons use them as nesting material. One rifleman reported his weapon 'spontaneously disassembled' when a baby raptor sneezed nearby."
+    },
+    "overseer": {
+      "name": "Rubber Company Overseer",
+      "hp": 80,
+      "speed": 50,
+      "reward": 25,
+      "type": "Elite",
+      "appearance": "Pith helmet, white suit, and chicotte whip",
+      "strategy": "Tough enemies that boost nearby units. Priority targets - eliminate them quickly to prevent them from rallying their forces.",
+      "lore": "Cruel taskmasters of the rubber plantations, these overseers drove the exploitation machine of Leopold's regime. Their chicotte whips crack through the air, spurring exhausted troops forward. They wear white suits to show they never dirty their own hands with labor.",
+      "historicalNote": "Rubber company overseers were responsible for enforcing impossible quotas, leading to widespread atrocities in the Congo Free State.",
+      "funFact": "Overseers are terrified of the Dilophosaurus's acid spit, as it ruins their pristine white suits. They've petitioned for 'acid-resistant formal wear' three times this month."
+    },
+    "mercenary": {
+      "name": "European Mercenary",
+      "hp": 120,
+      "speed": 65,
+      "reward": 35,
+      "type": "Heavy",
+      "appearance": "Mixed military gear, well-armed",
+      "strategy": "Fast and durable. These are shock troops meant to punch through defenses. Slow them down and focus fire.",
+      "lore": "Soldiers of fortune drawn from Europe's dispossessed and desperate. They fight not for king or country, but for Leopold's gold and the promise of plunder. Veterans of colonial wars across Africa, they know no mercy and expect none.",
+      "historicalNote": "The Congo Free State employed numerous European mercenaries and adventurers, attracted by promises of wealth from ivory and rubber.",
+      "funFact": "Mercenaries keep trying to poach baby dinosaurs to sell on the black market. So far, they've lost 47 fingers, 12 hats, and one particularly fancy mustache to protective dino parents."
+    },
+    "officer": {
+      "name": "Colonial Officer",
+      "hp": 150,
+      "speed": 45,
+      "reward": 50,
+      "type": "Commander",
+      "appearance": "Full military dress with medals",
+      "strategy": "Slow but extremely durable. Often appears with groups of conscripts. The medals aren't just for show - they provide actual armor.",
+      "lore": "Aristocrats and second sons seeking glory in Leopold's private empire. They wear their medals proudly, each one representing another village burned, another quota enforced. They advance slowly, confident in their superiority, until they meet their match in prehistoric fury.",
+      "historicalNote": "Colonial officers in the Congo Free State often came from Belgian nobility or military families, seeing service in Africa as a path to advancement.",
+      "funFact": "Officers insist on having their medals polished daily, even in combat. Stegosaurus spikes have an unfortunate tendency to pin medals to their owners... permanently."
+    },
+    "steamTank": {
+      "name": "Leopold's Steam Tank",
+      "hp": 900,
+      "speed": 28,
+      "reward": 140,
+      "type": "Boss",
+      "appearance": "Primitive armored vehicle belching black smoke",
+      "strategy": "Miniboss unit. Vastly reinforced plating and disciplined crew. Extremely high health and very slow. Layer slows, bleeds, and burst to crack it. Appears every 7 waves.",
+      "lore": "The crown jewel of Leopold's mechanized forces - a smoke-belching monstrosity of riveted steel and brass. Inside, a crew of engineers frantically shovels coal while the commander peers through a tiny viewport. It crushes everything in its path, leaving tracks of oil and blood.",
+      "historicalNote": "While steam tanks are anachronistic for the Congo Free State period, they represent the industrial exploitation and mechanical 'progress' that devastated the Congo.",
+      "funFact": "T-Rexes see steam tanks as giant metal eggs and have been observed trying to sit on them. This never ends well for the tank."
+    },
+    "explorer": {
+      "name": "Stanley Expedition Scout",
+      "hp": 60,
+      "speed": 75,
+      "reward": 20,
+      "type": "Fast",
+      "appearance": "Light gear with expedition equipment",
+      "strategy": "Very fast units that can slip past defenses if you're not careful. Slowing effects are essential.",
+      "lore": "Advance scouts of expeditions, mapping routes for exploitation. They carry journals filled with notes on resources to extract and peoples to subjugate. Quick and cunning, they've learned to move swiftly through hostile territory.",
+      "historicalNote": "Henry Morton Stanley's expeditions opened the Congo to Leopold II's exploitation. His scouts and guides made the colonial project possible.",
+      "funFact": "Scouts keep detailed journals of dinosaur behavior, but every entry ends with 'Note: Do not attempt to ride the Triceratops. Trust me on this one.'"
+    },
+    "chaplain": {
+      "name": "Mission Chaplain",
+      "hp": 70,
+      "speed": 40,
+      "reward": 30,
+      "type": "Support",
+      "appearance": "Black robes with colonial insignia",
+      "strategy": "Heals nearby units slowly. Not dangerous alone but can make waves last much longer. Target them early.",
+      "lore": "Missionaries who preach civilization while enabling barbarism. They bless the rifles and sanctify the slaughter, claiming divine mandate for Leopold's greed. Their prayers offer no salvation, only justification for atrocity.",
+      "historicalNote": "Religious missions in the Congo Free State often collaborated with the colonial regime, providing ideological cover for exploitation.",
+      "funFact": "Chaplains keep trying to convert the dinosaurs to Christianity. The Brachiosaurus towers politely attend services but keep falling asleep during sermons."
+    },
+    "engineer": {
+      "name": "Railway Engineer",
+      "hp": 90,
+      "speed": 50,
+      "reward": 40,
+      "type": "Special",
+      "appearance": "Work clothes with surveying equipment",
+      "strategy": "Reduces the effectiveness of slowing effects on nearby enemies. Dangerous when supporting fast units.",
+      "lore": "Builders of the iron roads that carry away the Congo's wealth. They survey the land not for its beauty but for the straightest path to profit. Each mile of track is laid over the bones of workers who died in its construction.",
+      "historicalNote": "Railway construction in the Congo was marked by extreme mortality rates among forced laborers, with thousands dying to build Leopold's infrastructure.",
+      "funFact": "Engineers are constantly measuring dinosaurs for 'transport feasibility.' They've concluded that Ankylosaurus would make excellent wrecking balls but terrible passengers."
+    },
+    "enforcer": {
+      "name": "Quota Enforcer",
+      "hp": 100,
+      "speed": 55,
+      "reward": 45,
+      "type": "Elite Heavy",
+      "appearance": "Armed with chicotte and pistol",
+      "strategy": "Becomes enraged and moves faster when damaged below 50% health. Finish them quickly once you start attacking.",
+      "lore": "The most feared agents of the rubber companies, responsible for ensuring impossible quotas are met. They carry ledgers stained with blood, recording every ounce of rubber, every punishment delivered. Their cruelty is methodical, calculated, efficient.",
+      "historicalNote": "Quota enforcement in the Congo Free State led to widespread mutilation and murder, with entire villages destroyed for failing to meet rubber production targets.",
+      "funFact": "Enforcers tried to give dinosaurs rubber quotas. The Stonklodons ate all the ledgers and now produce rubber coins, which wasn't quite what they had in mind."
+    },
+    "steamExo": {
+      "name": "Steam Exo-Soldier",
+      "hp": 220,
+      "speed": 52,
+      "reward": 70,
+      "type": "Elite Heavy",
+      "appearance": "Brass-plated exoskeleton with hissing pistons and reinforced cuirass",
+      "strategy": "Heavy armor mitigates chip damage. Use pierce and high single-target burst. Slows and knockbacks prevent the exo from building momentum.",
+      "lore": "Prototype exoskeletons cobbled from boiler parts and ship fittings. Each step vents scalding steam, and each punch can break a door.",
+      "historicalNote": "Steampunk exoskeletons are an imaginative anachronism; here they symbolize industrialized violence in service of extractive empires.",
+      "funFact": "Their operators have a whistle code. Unfortunately, Dilophosaurus spit keeps gumming up the whistles."
+    },
+    "clockworkBehemoth": {
+      "name": "Clockwork Behemoth",
+      "hp": 320,
+      "speed": 40,
+      "reward": 95,
+      "type": "Elite Heavy",
+      "appearance": "Lumbering gear-driven automaton with riveted plating and rotary saw arms",
+      "strategy": "Slow but catastrophic if left unchecked. Stack slows and crowd control to keep it in damage zones. Piercing lines and AoE both work well.",
+      "lore": "A walking testament to hubris, this mechanical monster is powered by a labyrinth of gears and a dangerously over-pressured boiler.",
+      "historicalNote": "While fully autonomous machines didn’t exist in this era, the fear of mechanized domination was already present in colonial propaganda.",
+      "funFact": "Despite the intimidation factor, the Behemoth is terrified of Stonklodons—those coins jam up its gears."
+    }
+  },
+  "waves": {
+    "scaling": {
+      "description": "Enemy strength increases with each wave",
+      "hpFormula": "baseHP * (1 + wave * 0.1)",
+      "speedFormula": "baseSpeed * (1 + wave * 0.02)",
+      "rewardFormula": "baseReward * (1 + wave * 0.05)"
+    },
+    "composition": {
+      "early": "Mostly conscripts and riflemen",
+      "mid": "Mix of all unit types; overseers become common and first steam exo prototypes appear",
+      "late": "Elite heavies and clockwork exo-units accompany officers and support; dense formations",
+      "boss": "Reinforced Steam Tank appears every 7 waves with elite heavy and exo escorts"
+    }
+  }
+}

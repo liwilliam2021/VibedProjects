@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dinosaur Tower Defense</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Main Menu / Map Selector -->
+  <div id="mainMenu" class="main-menu">
+    <div class="menu-card">
+      <div class="menu-header">
+        <h1>Dinosaur Defense — Main Menu</h1>
+        <button id="menuClose" class="btn-close menu-close" aria-label="Close main menu">Close</button>
+      </div>
+      <div class="menu-row">
+        <div class="maps-list">
+          <h2>Select Map</h2>
+          <ul id="mapList">
+            <li data-map="jungle" class="mapItem selected">
+              <strong>Jungle Ridge</strong><br/>
+              <small class="muted">Dense canopy, winding paths — Easy</small>
+            </li>
+            <li data-map="coast" class="mapItem">
+              <strong>Coastal Cliffs</strong><br/>
+              <small class="muted">Two paths, narrow bridges — Medium</small>
+            </li>
+            <li data-map="volcano" class="mapItem">
+              <strong>Volcanic Pass</strong><br/>
+              <small class="muted">Three paths, lava hazards — Hard</small>
+            </li>
+          </ul>
+        </div>
+        <div class="menu-controls">
+          <h2>Game</h2>
+          <div class="control-row">
+            <button id="menuPlay" data-desc="Start the selected map">Play</button>
+            <button id="menuWiki" data-desc="Open the dinosaur & enemy wiki">Wiki</button>
+            <button id="menuOptions" data-desc="Options (placeholder)">Options</button>
+          </div>
+          <div class="menu-info">
+            <h3>Map Info</h3>
+            <div id="mapInfo">Select a map to see details. Jungle Ridge: easy, forgiving, great for learning.</div>
+          </div>
+        </div>
+      </div>
+      <div class="menu-foot" id="menuTip">Tip: Loading tips...</div>
+    </div>
+  </div>
+
+  <!-- Enhanced Wiki modal with navigation -->
+  <div id="wikiModal" class="modal wiki-modal" hidden role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card wiki-card">
+      <div class="modal-header">
+        <h2>Field Guide & Intelligence Report</h2>
+        <button id="closeWiki" class="btn-close" aria-label="Close wiki">✕</button>
+      </div>
+      <div class="wiki-nav">
+        <button class="wiki-nav-btn active" data-page="dinosaurs">
+          <span class="nav-icon">🦖</span>
+          <span>Dinosaur Towers</span>
+        </button>
+        <button class="wiki-nav-btn" data-page="enemies">
+          <span class="nav-icon">⚔️</span>
+          <span>Enemy Forces</span>
+        </button>
+        <button class="wiki-nav-btn" data-page="overview">
+          <span class="nav-icon">📜</span>
+          <span>Game Overview</span>
+        </button>
+      </div>
+      <div class="modal-body wiki-body" id="wikiContent">
+        <!-- Content will be dynamically loaded here -->
+        <div class="wiki-loading">Loading field guide...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Options modal -->
+  <div id="optionsModal" class="modal" hidden role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Game Options</h2>
+        <button id="closeOptions" class="btn-close" aria-label="Close options">Close</button>
+      </div>
+      <div class="modal-body" id="optionsContent">
+        <div class="options-section">
+          <h3>Gameplay</h3>
+          <div class="option-row">
+            <label for="difficultySelect">Difficulty</label>
+            <select id="difficultySelect" class="option-control">
+              <option value="easy">Easy - Relaxed pace, forgiving</option>
+              <option value="normal" selected>Normal - Balanced challenge</option>
+              <option value="hard">Hard - Intense, unforgiving</option>
+              <option value="nightmare">Nightmare - For experts only</option>
+            </select>
+          </div>
+          <div class="option-row">
+            <label for="startingMoney">Starting Money</label>
+            <input type="range" id="startingMoney" class="option-control" min="50" max="300" value="100" step="10">
+            <span id="startingMoneyValue" class="option-value">100</span>
+          </div>
+          <div class="option-row">
+            <label for="startingLives">Starting Lives</label>
+            <input type="range" id="startingLives" class="option-control" min="5" max="30" value="10" step="1">
+            <span id="startingLivesValue" class="option-value">10</span>
+          </div>
+          <div class="option-row">
+            <label for="waveReward">Wave Completion Bonus</label>
+            <input type="range" id="waveReward" class="option-control" min="10" max="50" value="20" step="5">
+            <span id="waveRewardValue" class="option-value">20</span>
+          </div>
+        </div>
+
+        <div class="options-section">
+          <h3>Graphics</h3>
+          <div class="option-row">
+            <label for="showRanges">
+              <input type="checkbox" id="showRanges" checked>
+              Show Tower Ranges
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="showDamageNumbers">
+              <input type="checkbox" id="showDamageNumbers">
+              Show Damage Numbers
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="particleEffects">
+              <input type="checkbox" id="particleEffects" checked>
+              Particle Effects
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="screenShake">
+              <input type="checkbox" id="screenShake">
+              Screen Shake on Big Hits
+            </label>
+          </div>
+        </div>
+
+        <div class="options-section">
+          <h3>Audio</h3>
+          <div class="option-row">
+            <label for="masterVolume">Master Volume</label>
+            <input type="range" id="masterVolume" class="option-control" min="0" max="100" value="70" step="5">
+            <span id="masterVolumeValue" class="option-value">70%</span>
+          </div>
+          <div class="option-row">
+            <label for="soundEffects">
+              <input type="checkbox" id="soundEffects" checked>
+              Sound Effects
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="musicEnabled">
+              <input type="checkbox" id="musicEnabled" checked>
+              Background Music
+            </label>
+          </div>
+        </div>
+
+        <div class="options-section">
+          <h3>Controls</h3>
+          <div class="option-row">
+            <label for="confirmPlacement">
+              <input type="checkbox" id="confirmPlacement">
+              Confirm Tower Placement
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="gridSnap">
+              <input type="checkbox" id="gridSnap">
+              Snap to Grid
+            </label>
+          </div>
+          <div class="option-row">
+            <label for="keyboardShortcuts">
+              <input type="checkbox" id="keyboardShortcuts" checked>
+              Enable Keyboard Shortcuts
+            </label>
+          </div>
+        </div>
+
+        <div class="options-footer">
+          <button id="resetOptions" class="btn-secondary">Reset to Defaults</button>
+          <button id="saveOptions" class="btn-primary">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="hud">
+      <!-- HUD Top: Selected Tower Portrait and Stats -->
+      <div class="hud-top" aria-label="Selected tower info">
+        <div class="portrait" aria-hidden="true">
+          <div class="img" id="selectedEmoji">🦖</div>
+        </div>
+        <div class="hud-stats">
+          <div class="stat" aria-live="polite">
+            <div class="stat-label" id="selectedTowerLabel">Raptor Nest</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Range</div>
+            <div class="stat-bar" role="meter" aria-valuemin="0" aria-valuemax="200" aria-valuenow="140">
+              <div class="stat-bar-inner" id="statRange" style="width:70%"></div>
+            </div>
+            <div class="stat-value" id="statRangeValue">140</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Power</div>
+            <div class="stat-bar" role="meter" aria-valuemin="1" aria-valuemax="10" aria-valuenow="4">
+              <div class="stat-bar-inner" id="statPower" style="width:40%"></div>
+            </div>
+            <div class="stat-value" id="statPowerValue">4</div>
+          </div>
+        </div>
+      </div>
+      <div class="hud-row">
+        <div>Money: <span id="money">100</span></div>
+        <div>Lives: <span id="lives">10</span></div>
+        <div>Wave: <span id="wave">0</span></div>
+      </div>
+
+      <div class="hud-row">
+        <button id="startWave" data-desc="Start the next wave">Start Wave</button>
+        <button id="fastForward" data-desc="Toggle game speed">x2 Speed</button>
+        <button id="pauseGame" data-desc="Pause and show menu">Pause</button>
+        <button id="restartGame" data-desc="Reset and restart the game">Restart</button>
+      </div>
+      <div class="hud-row">
+        <label style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="autoNext" />
+          <span>Auto Next Wave</span>
+        </label>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Dino Towers</div>
+        <div class="tower-bar">
+          <button class="towerBtn" data-type="RaptorNest" data-desc="Raptor Nest — homing leaps, applies bleed">
+            <span class="emoji" aria-hidden="true">🦖</span>
+            <span class="name">Raptor Nest</span>
+            <span class="cost">60</span>
+          </button>
+          <button class="towerBtn" data-type="Protoceratops" data-desc="Protoceratops — common headbutt, brief stagger">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Protoceratops</span>
+            <span class="cost">55</span>
+          </button>
+          <button class="towerBtn" data-type="Triceratops" data-desc="Triceratops — horn rush, stuns and knocks back">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Triceratops</span>
+            <span class="cost">85</span>
+          </button>
+          <button class="towerBtn" data-type="Brachiosaurus" data-desc="Brachiosaurus — canopy aura slows enemies">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Brachiosaurus</span>
+            <span class="cost">95</span>
+          </button>
+          <button class="towerBtn" data-type="Dilophosaurus" data-desc="Dilophosaurus — spits acid puddles (DoT + slow)">
+            <span class="emoji" aria-hidden="true">🦖</span>
+            <span class="name">Dilophosaurus</span>
+            <span class="cost">75</span>
+          </button>
+          <button class="towerBtn" data-type="Iguanodon" data-desc="Iguanodon — common spear toss single-target DPS">
+            <span class="emoji" aria-hidden="true">🦖</span>
+            <span class="name">Iguanodon</span>
+            <span class="cost">70</span>
+          </button>
+          <button class="towerBtn" data-type="Stegosaurus" data-desc="Stegosaurus — piercing thagomizer spikes">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Stegosaurus</span>
+            <span class="cost">80</span>
+          </button>
+          <button class="towerBtn economy" data-type="Stonklodon" data-desc="Stonklodon — prints money over time">
+            <span class="emoji" aria-hidden="true">🪙</span>
+            <span class="name">Stonklodon</span>
+            <span class="cost">90</span>
+          </button>
+          <button class="towerBtn legendary" data-type="TRex" data-desc="T‑Rex — Legendary roar stun + heavy bite">
+            <span class="emoji" aria-hidden="true">🦖</span>
+            <span class="name">T‑Rex</span>
+            <span class="cost">150</span>
+          </button>
+          <button class="towerBtn legendary" data-type="Spinosaurus" data-desc="Spinosaurus — Legendary twin acid pools (cone DoT + slow)">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Spinosaurus</span>
+            <span class="cost">170</span>
+          </button>
+          <button class="towerBtn" data-type="Pteranodon" data-desc="Pteranodon — rare airstrike boulders (AoE)">
+            <span class="emoji" aria-hidden="true">🦖</span>
+            <span class="name">Pteranodon</span>
+            <span class="cost">130</span>
+          </button>
+          <button class="towerBtn" data-type="Ankylosaurus" data-desc="Ankylosaurus — rare tail slam (AoE + control)">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Ankylosaurus</span>
+            <span class="cost">110</span>
+          </button>
+          <button class="towerBtn legendary" data-type="Quetzalcoatlus" data-desc="Quetzalcoatlus — Legendary global strike, full map range">
+            <span class="emoji" aria-hidden="true">🦅</span>
+            <span class="name">Quetzalcoatlus</span>
+            <span class="cost">200</span>
+          </button>
+          <button class="towerBtn legendary" data-type="Dreadnoughtus" data-desc="Dreadnoughtus — Legendary seismic stomp (AoE + stun + knockback)">
+            <span class="emoji" aria-hidden="true">🦕</span>
+            <span class="name">Dreadnoughtus</span>
+            <span class="cost">190</span>
+          </button>
+        </div>
+        <div class="selection">
+          Selected: <strong id="selectedTowerName">Raptor Nest</strong>
+          <span class="sep">•</span>
+          Cost: <strong id="selectedCost">60</strong>
+        </div>
+      </div>
+
+      <div id="info">Select a dino tower and click to place (not on the path). Press R to rotate preview.</div>
+    </div>
+  </div>
+  <script src="main.js"></script>
+  <script src="wiki.js"></script>
+  <div id="tooltip" class="tooltip" hidden></div>
+</body>
+</html>
