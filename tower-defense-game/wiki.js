@@ -72,6 +72,8 @@
     
     // Add click handlers for expandable entries
     addEntryClickHandlers();
+    // Replace emoji icons with sprite portraits
+    decorateWikiSprites();
   }
   
   // Helper: render "Coming Soon" Mythic previews (not in game data)
@@ -99,21 +101,59 @@
     if (!gameData || !gameData.towers) {
       return '<p>Loading dinosaur data...</p>';
     }
-    
+
+    // Build Tiered Upgrade Paths section (names + total costs)
+    let tiersSection = '';
+    const ups = gameData.upgradePaths || [];
+    if (ups.length > 0) {
+      tiersSection += `<div class="rarity-group">`;
+      tiersSection += `<h4 class="rarity-header">Tiered Upgrade Paths</h4>`;
+      for (const p of ups) {
+        const tiers = (p.tiers || []).map(t =>
+          `<li>Tier ${t.tier} — <strong>${t.name}</strong> <span class="entry-cost">Total: ${t.total_cost}</span></li>`
+        ).join('');
+        tiersSection += `
+          <div class="wiki-entry" data-upgrade-path="${p.id}">
+            <div class="entry-header">
+              <span class="entry-emoji">⬆️</span>
+              <div class="entry-title">
+                <h4>${p.path}</h4>
+                <span class="entry-type">Tiered Upgrades</span>
+              </div>
+              <span class="expand-icon">▼</span>
+            </div>
+            <div class="entry-content" style="display:none;">
+              <div class="entry-section">
+                <h5>Available Tiers</h5>
+                <ul class="tier-list" style="margin:0;padding-left:18px;line-height:1.6;">
+                  ${tiers}
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      tiersSection += `</div>`;
+    }
+
     let html = `
       <div class="wiki-page dinosaurs-page">
         <h3 class="wiki-title">🦖 Dinosaur Defense Forces</h3>
         <p class="wiki-intro">
-          These prehistoric warriors have been awakened and trained to defend against the colonial invasion. 
+          These prehistoric warriors have been awakened and trained to defend against the colonial invasion.
           Each species brings unique abilities honed over millions of years of evolution.
         </p>
+        <div class="wiki-disclaimer" style="margin-bottom:16px;">
+          In-game purchases are base towers only; higher tiers are upgrades. Wiki costs shown are additive totals.
+        </div>
+        ${tiersSection}
         <div class="wiki-entries">
     `;
-    
+
     // Group towers by rarity
     const rarityOrder = ['Common', 'Uncommon', 'Rare', 'Legendary', 'Mythic'];
     const towersByRarity = {};
-    
+
     for (const [key, tower] of Object.entries(gameData.towers)) {
       const rarity = tower.rarity || 'Common';
       if (!towersByRarity[rarity]) {
@@ -121,14 +161,14 @@
       }
       towersByRarity[rarity].push({ key, ...tower });
     }
-    
+
     // Render towers by rarity group
     for (const rarity of rarityOrder) {
       if (!towersByRarity[rarity]) continue;
-      
+
       html += `<div class="rarity-group">`;
       html += `<h4 class="rarity-header ${rarity.toLowerCase()}">${rarity} Towers</h4>`;
-      
+
       for (const tower of towersByRarity[rarity]) {
         const rarityClass = tower.rarity ? tower.rarity.toLowerCase() : 'common';
         html += `
@@ -180,10 +220,10 @@
           </div>
         `;
       }
-      
+
       html += `</div>`;
     }
-    
+
     html += `
         </div>
 
@@ -197,7 +237,7 @@
         </div>
       </div>
     `;
-    
+
     return html;
   }
   
@@ -443,4 +483,48 @@
       });
     }
   });
+// Replace emojis in wiki lists with sprite portraits (towers + enemies)
+function decorateWikiSprites() {
+  try {
+    // Towers
+    document.querySelectorAll('.tower-entry').forEach(entry => {
+      const key = entry.getAttribute('data-tower');
+      const emojiEl = entry.querySelector('.entry-header .entry-emoji');
+      if (!emojiEl || !key || !window.Sprites) return;
+      const url = Sprites.getTowerPortrait(key, 48);
+      emojiEl.textContent = '';
+      emojiEl.classList.add('sprite');
+      emojiEl.style.backgroundImage = `url(${url})`;
+      emojiEl.style.backgroundSize = 'contain';
+      emojiEl.style.backgroundRepeat = 'no-repeat';
+      emojiEl.style.backgroundPosition = 'center';
+      emojiEl.style.width = '40px';
+      emojiEl.style.height = '40px';
+      emojiEl.style.display = 'inline-block';
+      emojiEl.style.imageRendering = 'pixelated';
+    });
+    // Enemies
+    document.querySelectorAll('.enemy-entry').forEach(entry => {
+      const key = entry.getAttribute('data-enemy');
+      const emojiEl = entry.querySelector('.entry-header .entry-emoji');
+      if (!emojiEl || !key || !window.Sprites) return;
+      // Use a stable seed per kind for consistent look in wiki
+      const url = Sprites.getEnemyPortrait(key, 48);
+      emojiEl.textContent = '';
+      emojiEl.classList.add('sprite');
+      emojiEl.style.backgroundImage = `url(${url})`;
+      emojiEl.style.backgroundSize = 'contain';
+      emojiEl.style.backgroundRepeat = 'no-repeat';
+      emojiEl.style.backgroundPosition = 'center';
+      emojiEl.style.width = '40px';
+      emojiEl.style.height = '40px';
+      emojiEl.style.display = 'inline-block';
+      emojiEl.style.imageRendering = 'pixelated';
+    });
+  } catch (e) {
+    // Non-fatal if sprites are unavailable
+    // console.warn('decorateWikiSprites failed', e);
+  }
+}
+
 })();

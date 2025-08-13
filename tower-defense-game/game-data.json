@@ -75,6 +75,21 @@
       "lore": "These gentle giants were bio-engineered with symbiotic vine colonies that secrete paralytic spores. The tallest recorded Brachiosaurus, named 'Skyscraper', could peer over a four-story building. Their presence alone demoralizes enemy forces.",
       "funFact": "Brachiosaurus towers double as weather stations - their long necks can accurately predict rain 3 days in advance by sensing atmospheric pressure changes."
     },
+    "Maiasaura": {
+      "name": "Maiasaura",
+      "cost": 100,
+      "range": 150,
+      "emoji": "🦕",
+      "power": 3,
+      "type": "Support",
+      "rarity": "Rare",
+      "damage": "None (aura)",
+      "attackSpeed": "Aura",
+      "special": "+25% attack speed to nearby towers (within 150px)",
+      "strategy": "Anchor her near high-DPS towers to accelerate their attacks. Place just behind chokepoints; stacks well with slows and pierce lines. Multiple Maiasaura do not stack additively—only the strongest aura applies.",
+      "lore": "The 'good mother lizard' watches over the herd. Handler drums cue a rhythmic heartbeat that syncs nearby dinosaurs into a relentless tempo, hastening their strikes.",
+      "funFact": "Handlers leave fruit garlands by her nest. She always eats the blueberries first."
+    },
     "Dilophosaurus": {
       "name": "Dilophosaurus",
       "cost": 75,
@@ -210,5 +225,111 @@
       "lore": "Named for its titanic mass, the Dreadnoughtus shakes the ground with every step, shattering formations and nerve alike.",
       "funFact": "Its footfalls double as the camp’s drumline. Rhythms improve tower morale by 3–5% (anecdotally)."
     }
-  }
+  },
+  "upgradePaths": [
+    {
+      "id": "raptors",
+      "path": "Raptors",
+      "baseType": "RaptorNest",
+      "tiers": [
+        { "tier": 1, "name": "Compsognathus Swarm", "total_cost": 45 },
+        { "tier": 2, "name": "Oviraptor Scouts", "total_cost": 85 },
+        { "tier": 3, "name": "Velociraptor Pack", "total_cost": 155 }
+      ]
+    },
+    {
+      "id": "heavy_predators",
+      "path": "Heavy Predators",
+      "baseType": "TRex",
+      "tiers": [
+        { "tier": 1, "name": "Carnotaurus Charger", "total_cost": 80 },
+        { "tier": 2, "name": "Tyrannosaurus Rex Apex", "total_cost": 155 },
+        { "tier": 3, "name": "Giganotosaurus Titan", "total_cost": 245 }
+      ]
+    },
+    {
+      "id": "horned_defenders",
+      "path": "Horned Defenders",
+      "baseType": "Protoceratops",
+      "tiers": [
+        { "tier": 1, "name": "Protoceratops Defender", "total_cost": 55 },
+        { "tier": 2, "name": "Styracosaurus Sweeper", "total_cost": 100 },
+        { "tier": 3, "name": "Triceratops Breaker", "total_cost": 170 }
+      ]
+    },
+    {
+      "id": "armored_tanks",
+      "path": "Armored Tanks",
+      "baseType": "Ankylosaurus",
+      "tiers": [
+        { "tier": 1, "name": "Minmi Blocker", "total_cost": 70 },
+        { "tier": 2, "name": "Ankylosaurus Stopper", "total_cost": 135 }
+      ]
+    },
+    {
+      "id": "piercing_spine",
+      "path": "Piercing Spine Line",
+      "baseType": "Stegosaurus",
+      "tiers": [
+        { "tier": 1, "name": "Kentrosaurus Piercer", "total_cost": 65 },
+        { "tier": 2, "name": "Stegosaurus Spiker", "total_cost": 125 }
+      ]
+    },
+    {
+      "id": "acid_artillery",
+      "path": "Acid Artillery",
+      "baseType": "Dilophosaurus",
+      "tiers": [
+        { "tier": 1, "name": "Dilophosaurus Spitter", "total_cost": 75 },
+        { "tier": 2, "name": "Cryolophosaurus Chiller", "total_cost": 145 }
+      ]
+    },
+    {
+      "id": "amphibious_predators",
+      "path": "Amphibious Predators",
+      "baseType": "Spinosaurus",
+      "tiers": [
+        { "tier": 1, "name": "Baryonyx Hunter", "total_cost": 85 },
+        { "tier": 2, "name": "Spinosaurus Tyrant", "total_cost": 165 }
+      ]
+    },
+    {
+      "id": "aerial_bombardiers",
+      "path": "Aerial Bombardiers",
+      "baseType": "Pteranodon",
+      "tiers": [
+        { "tier": 1, "name": "Pterodactylus Bomber", "total_cost": 70 },
+        { "tier": 2, "name": "Pteranodon Striker", "total_cost": 135 },
+        { "tier": 3, "name": "Quetzalcoatlus Fortress", "total_cost": 225 }
+      ]
+    },
+    {
+      "id": "sauropods",
+      "path": "Sauropods",
+      "baseType": "Brachiosaurus",
+      "tiers": [
+        { "tier": 1, "name": "Brachiosaurus Sentinel", "total_cost": 120 },
+        { "tier": 2, "name": "Argentinosaurus Colossus", "total_cost": 200 },
+        { "tier": 3, "name": "Dreadnoughtus Shaker", "total_cost": 300 }
+      ]
+    },
+    {
+      "id": "buff_auras",
+      "path": "Buff Auras",
+      "baseType": "Maiasaura",
+      "tiers": [
+        { "tier": 1, "name": "Iguanodon Warhorn", "total_cost": 80 },
+        { "tier": 2, "name": "Maiasaura Rallyer", "total_cost": 145 }
+      ]
+    },
+    {
+      "id": "economy_synapsids",
+      "path": "Economy Specialists — Synapsids",
+      "baseType": "Stonklodon",
+      "tiers": [
+        { "tier": 1, "name": "Dimetrodon Banker", "total_cost": 70 },
+        { "tier": 2, "name": "Stonklodon Hoarder", "total_cost": 120 }
+      ]
+    }
+  ]
 }

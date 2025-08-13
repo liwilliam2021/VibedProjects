@@ -25,6 +25,8 @@
   const statPowerEl = document.getElementById('statPower');
   const statPowerValueEl = document.getElementById('statPowerValue');
 
+  // Predeclare to avoid Temporal Dead Zone when updateHUD calls updateUpgradePanel()
+  let upgradePanelEl = null;
   // Main menu / map UI elements
   const mainMenuEl = document.getElementById('mainMenu');
   const mapListEl = document.getElementById('mapList');
@@ -186,6 +188,8 @@
   let previewPos = null;
   let rotatePreview = 0;
   let selectedType = 'RaptorNest';
+  let selectedPathId = null; // upgrade path id for current shop selection
+  let selectedTower = null;  // currently selected placed tower (for upgrades)
 
   // Make ranges slightly larger to ensure engagement even with novice placements
   const TOWER_TYPES = {
@@ -196,6 +200,7 @@
     Dilophosaurus:  { name: 'Dilophosaurus',  cost: 75,  range: 180 },
     Stegosaurus:    { name: 'Stegosaurus',    cost: 80,  range: 170 },
     Iguanodon:      { name: 'Iguanodon',      cost: 70,  range: 150 },
+    Maiasaura:      { name: 'Maiasaura',      cost: 100, range: 150 }, // Rare support — aura hastens allies
     Stonklodon:     { name: 'Stonklodon',     cost: 90,  range: 120 }, // Economy tower — fixed payout per wave
     TRex:           { name: 'T-Rex',          cost: 150, range: 155 }, // Legendary
     Spinosaurus:    { name: 'Spinosaurus',    cost: 170, range: 190 }, // Legendary
@@ -213,6 +218,7 @@
     Dilophosaurus:  { emoji: '🦖', power: 5 },
     Stegosaurus:    { emoji: '🦕', power: 6 },
     Iguanodon:      { emoji: '🦖', power: 5 },
+    Maiasaura:      { emoji: '🦕', power: 3 },
     Stonklodon:     { emoji: '🪙', power: 1 },
     TRex:           { emoji: '🦖', power: 9 },
     Spinosaurus:    { emoji: '🦕', power: 8 },
@@ -221,6 +227,89 @@
     Dreadnoughtus:  { emoji: '🦕', power: 9 },
     Quetzalcoatlus: { emoji: '🦅', power: 8 }
   };
+
+  // Upgrade paths model (loaded from game-data.json)
+  let UPGRADE_PATHS = [];
+  const BASE_TO_PATH = new Map(); // baseType -> path object
+  const PATH_BY_ID = new Map();   // id -> path object
+
+  async function loadUpgradeData() {
+    try {
+      const res = await fetch('game-data.json');
+      const data = await res.json();
+      UPGRADE_PATHS = data.upgradePaths || [];
+      BASE_TO_PATH.clear(); PATH_BY_ID.clear();
+      for (const p of UPGRADE_PATHS) {
+        PATH_BY_ID.set(p.id, p);
+        if (p.baseType) BASE_TO_PATH.set(p.baseType, p);
+      }
+      buildShopUI();
+      updateSelectionUI();
+    } catch (e) {
+      console.warn('Failed to load upgrade paths', e);
+    }
+  }
+
+  function getTier1ForBase(baseType) {
+    const p = BASE_TO_PATH.get(baseType);
+    return p && p.tiers && p.tiers[0];
+  }
+  function getPathForBase(baseType) {
+    return BASE_TO_PATH.get(baseType) || null;
+  }
+  function getUpgradeInfoForTower(tower) {
+    if (!tower || !tower._pathId) return null;
+    const p = PATH_BY_ID.get(tower._pathId);
+    if (!p) return null;
+    const curr = p.tiers.find(t => t.tier === tower._tier) || p.tiers[0];
+    const next = p.tiers.find(t => t.tier === tower._tier + 1) || null;
+    const upgradeCost = next ? (next.total_cost - curr.total_cost) : null;
+    return { path: p, curr, next, upgradeCost };
+  }
+
+  function buildShopUI() {
+    const bar = document.querySelector('.tower-bar');
+    if (!bar || UPGRADE_PATHS.length === 0) return;
+    bar.innerHTML = '';
+    for (const p of UPGRADE_PATHS) {
+      const t1 = p.tiers[0];
+      const baseType = p.baseType;
+      const btn = document.createElement('button');
+      btn.className = 'towerBtn';
+      btn.setAttribute('data-type', baseType);
+      btn.setAttribute('data-path-id', p.id);
+      btn.setAttribute('data-desc', `${t1.name} — Tier 1`);
+      btn.innerHTML = `
+        <span class="emoji" aria-hidden="true">${(TOWER_UI[baseType]?.emoji)||'🦖'}</span>
+        <span class="name">${t1.name}</span>
+        <span class="cost">${t1.total_cost}</span>
+      `;
+      btn.addEventListener('click', () => {
+        selectedType = baseType;
+        selectedPathId = p.id;
+        updateSelectionUI();
+      });
+      bar.appendChild(btn);
+    }
+    // Decorate with portraits if sprite system exists
+    if (window.Sprites) {
+      document.querySelectorAll('.towerBtn .emoji').forEach(el => {
+        const btn = el.closest('.towerBtn');
+        const type = btn && btn.getAttribute('data-type');
+        if (!type) return;
+        const url = Sprites.getTowerPortrait(type, 32);
+        el.textContent = '';
+        el.classList.add('sprite');
+        el.style.backgroundImage = `url(${url})`;
+        el.style.backgroundSize = 'contain';
+        el.style.backgroundRepeat = 'no-repeat';
+        el.style.backgroundPosition = 'center';
+        el.style.width = '24px';
+        el.style.height = '24px';
+        el.style.display = 'inline-block';
+      });
+    }
+  }
 
   // Removed legacy MAP metadata block.
   // A single MAPS object with paths + modifiers is defined below (see "Map definitions and current path").
@@ -398,16 +487,35 @@
     return normalizedWeights.length - 1; // Fallback to last path
   }
 
+  function pickEnemyKind(elite, steamElite, isBoss, wave) {
+    if (isBoss) return 'steamTank';
+    if (steamElite) return (Math.random() < 0.5 ? 'steamExo' : 'clockworkBehemoth');
+    if (elite) {
+      const pool = ['mercenary','officer','overseer'];
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    // Base infantry; small chance of overseer showing up early
+    if (Math.random() < Math.min(0.05 + wave * 0.002, 0.12)) return 'overseer';
+    return (Math.random() < 0.6 ? 'conscript' : 'rifleman');
+  }
+
   // Enemy with status effects
   let ENEMY_ID_SEQ = 1;
 
   class Enemy {
-    constructor(hp, speed, pathIndex = null) { // speed in px/s
+    constructor(hp, speed, pathIndex = null, kind = 'conscript', variantSeed = 0) { // speed in px/s
       this.id = ENEMY_ID_SEQ++;
       this.hp = hp;
       this.maxHp = hp;
       this.baseSpeed = speed;
       this.radius = 10;
+
+      // Visual identity (sprite atlas/procedural)
+      this.kind = kind || 'conscript';
+      this.variantSeed = variantSeed || (this.id * 1337 + (typeof wave !== 'undefined' ? wave : 0) * 101);
+      this.sprite = (window.Sprites && Sprites.createInstance(this.kind, { variantSeed: this.variantSeed })) || null;
+      if (this.kind === 'steamExo' || this.kind === 'clockworkBehemoth') this.radius = 12;
+      if (this.kind === 'steamTank') this.radius = 14;
 
       // Select a path based on weights if not specified
       if (pathIndex === null) {
@@ -525,6 +633,7 @@
       // Stun handling
       if (this.stunTimer > 0) {
         this.stunTimer -= dt;
+        if (this.sprite) this.sprite.update(dt);
         return; // no movement while stunned
       }
 
@@ -534,6 +643,7 @@
         if (this.waypoint >= this.path.length - 1) {
           this.reachEnd();
         }
+        if (this.sprite) this.sprite.update(dt);
         return;
       }
 
@@ -555,6 +665,7 @@
         // Check if we've reached the end
         if (this.waypoint >= this.path.length - 1) {
           this.reachEnd();
+          if (this.sprite) this.sprite.update(dt);
           return;
         }
         
@@ -580,6 +691,8 @@
       
       // Sanity check: ensure enemy stays on path
       this.validatePosition();
+
+      if (this.sprite) this.sprite.update(dt);
     }
     
     validatePosition() {
@@ -613,11 +726,21 @@
     draw(ctx) {
       if (!this.alive) return;
       ctx.save();
-      // Body
-      ctx.fillStyle = '#ff6f6f';
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
-      ctx.fill();
+
+      // Direction for orientation
+      const nt = this.nextTarget || this.currentWaypoint || { x: this.x + 1, y: this.y };
+      const ang = Math.atan2(nt.y - this.y, nt.x - this.x);
+
+      // Render sprite if available; fallback to simple circle
+      if (this.sprite) {
+        this.sprite.draw(ctx, this.x, this.y, ang, 1);
+      } else {
+        ctx.fillStyle = '#ff6f6f';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2);
+        ctx.fill();
+      }
+
       // Status rings
       if (this.slowFactor < 1) {
         ctx.strokeStyle = 'rgba(120,200,255,0.8)';
@@ -640,6 +763,7 @@
       ctx.fillStyle = '#6af';
       const pct = Math.max(0, this.hp/this.maxHp);
       ctx.fillRect(this.x-w/2, this.y-16, w*pct, 4);
+
       ctx.restore();
     }
   }
@@ -663,6 +787,7 @@
       if (target) {
         raptorLeaps.push(new HomingLeap(this.x, this.y, target, this.leapSpeed, this.impact, this.bleedDps, this.bleedDur));
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.28;
       }
     }
     draw(ctx) {
@@ -705,6 +830,7 @@
       if (target) {
         rushStrikes.push(new RushStrike(this.x, this.y, angleBetween(this.x,this.y,target.x,target.y), this.rushSpeed, this.rushLength, this.stunDur, this.knockback, this.damage));
         this.cooldown = this.rushCooldown;
+        this.attackAnimTimer = 0.32;
       }
     }
     draw(ctx) {
@@ -750,6 +876,7 @@
           // light damage-over-time so the "attack" is visible
           e.hp -= this.dotDps * dt;
           if (e.hp <= 0) e.die();
+          this.attackAnimTimer = Math.max(this.attackAnimTimer || 0, 0.12);
         }
       }
     }
@@ -768,6 +895,36 @@
         ctx.beginPath(); ctx.arc(this.x, this.y, this.range, 0, Math.PI*2); ctx.fill();
       }
       ctx.restore();
+    }
+  }
+
+  // Rare Support — Maiasaura (aura: +25% attack speed to nearby towers)
+  class MaiasauraTower {
+    constructor(x,y) {
+      this.x=x; this.y=y;
+      this.range = TOWER_TYPES.Maiasaura.range;
+      this.buffMult = 0.8; // 20% faster cooldown (attack every 0.8x original fireRate)
+    }
+    update(dt, enemies) {
+      // Buff application happens in global pre-pass in update(dt)
+    }
+    draw(ctx) {
+      ctx.save();
+      // body base
+      ctx.translate(this.x, this.y);
+      ctx.fillStyle = '#8fbf7a';
+      ctx.fillRect(-12, -6, 24, 12);
+      // head/crest
+      ctx.fillStyle = '#d9e6b8';
+      ctx.fillRect(8, -10, 6, 8);
+      // range aura
+      ctx.restore();
+      if (gameSettings.showRanges) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(140,220,180,0.08)';
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.range, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
     }
   }
 
@@ -793,6 +950,7 @@
           acidPools.push(new AcidPool(ix, iy, this.poolRadius, this.poolDuration, this.poolDps, this.poolSlow));
         }));
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.30;
       }
     }
     draw(ctx) {
@@ -835,6 +993,7 @@
         const ang = angleBetween(this.x, this.y, target.x, target.y);
         spikes.push(new SpikeProjectile(this.x, this.y, ang, this.spikeSpeed, this.damage, this.pierce));
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.25;
       }
     }
     draw(ctx) {
@@ -921,6 +1080,7 @@
           }
         }
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.35;
       }
     }
     draw(ctx) {
@@ -968,6 +1128,7 @@
         acidPools.push(new AcidPool(x1, y1, this.poolRadius, this.poolDuration, this.poolDps, this.poolSlow));
         acidPools.push(new AcidPool(x2, y2, this.poolRadius, this.poolDuration, this.poolDps, this.poolSlow));
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.30;
       }
     }
     draw(ctx) {
@@ -1009,6 +1170,7 @@
           if (Math.hypot(e.x-target.x, e.y-target.y) <= this.aoe) e.takeDamage(this.damage);
         }
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.28;
       }
     }
     draw(ctx) {
@@ -1054,6 +1216,7 @@
           }
         }
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.30;
       }
     }
     draw(ctx) {
@@ -1092,6 +1255,7 @@
         target.takeDamage(this.damage);
         target.applyStun(this.stagger);
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.22;
       }
     }
     draw(ctx) {
@@ -1131,6 +1295,7 @@
         // Use SpikeProjectile with single pierce to simulate spear
         spikes.push(new SpikeProjectile(this.x, this.y, ang, this.spearSpeed, this.damage, 1));
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.22;
       }
     }
     draw(ctx) {
@@ -1177,6 +1342,7 @@
           }
         }
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.30;
       }
     }
     draw(ctx) {
@@ -1222,6 +1388,7 @@
           }
         }
         this.cooldown = this.fireRate;
+        this.attackAnimTimer = 0.30;
       }
     }
     draw(ctx) {
@@ -1474,8 +1641,8 @@
         if (wave >= 7 && wave % 7 === 0) {
           const bossHp = Math.round(baseHp * 8);
           const bossSpeed = Math.max(35, Math.round(baseSpeed * 0.85));
-          const tank = new Enemy(bossHp, bossSpeed);
-          tank.radius = 14; // visually larger steam tank
+          const kindBoss = pickEnemyKind(false, false, true, wave);
+          const tank = new Enemy(bossHp, bossSpeed, null, kindBoss, wave * 1000);
           enemies.push(tank);
         }
         spawning = false;
@@ -1488,8 +1655,8 @@
       const steamElite = !elite && (Math.random() < steamEliteChance);
       const hp = Math.round(baseHp * (steamElite ? 2.2 : (elite ? 1.4 : 1.0)));
       const speed = baseSpeed * (steamElite ? 1.05 : (elite ? 1.2 : 1.0));
-      const e = new Enemy(hp, speed);
-      if (steamElite) e.radius = 12; // slight visual hint
+      const kind = pickEnemyKind(elite, steamElite, false, wave);
+      const e = new Enemy(hp, speed, null, kind, wave * 1000 + spawned);
       enemies.push(e);
       spawned++;
     }, intervalMs / gameSpeed);
@@ -1506,11 +1673,27 @@
 
   canvas.addEventListener('click', ()=>{
     if (!previewPos) return;
-    if (isOnPath(previewPos.x, previewPos.y)) { infoTemp('Cannot place on path'); return; }
+    const x = previewPos.x, y = previewPos.y;
+
+    // Select a tower if clicking on one (topmost first)
+    for (let i = towers.length - 1; i >= 0; i--) {
+      const t = towers[i];
+      if (Math.hypot(t.x - x, t.y - y) <= 18) {
+        selectedTower = t;
+        updateUpgradePanel(true);
+        infoTemp('Tower selected');
+        return;
+      }
+    }
+
+    if (isOnPath(x, y)) { infoTemp('Cannot place on path'); return; }
     const def = TOWER_TYPES[selectedType];
-    if (money < def.cost) { infoTemp('Not enough money'); return; }
-    placeTower(selectedType, previewPos.x, previewPos.y);
-    money -= def.cost;
+    // Use Tier-1 total cost for purchases
+    const p = getPathForBase(selectedType);
+    const baseCost = p?.tiers?.[0]?.total_cost ?? def.cost;
+    if (money < baseCost) { infoTemp('Not enough money'); return; }
+    placeTower(selectedType, x, y);
+    money -= baseCost;
     updateHUD();
   });
 
@@ -1548,31 +1731,38 @@
     restartBtn.addEventListener('click', restartGame);
   }
 
-  // Tower selection UI
-  const towerButtons = document.querySelectorAll('.towerBtn');
-  towerButtons.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const type = btn.getAttribute('data-type') || 'RaptorNest';
-      selectedType = type;
-      updateSelectionUI();
-    });
-  });
+  // Shop buttons are built dynamically from upgrade data; ensure selection reflects affordability
   function updateSelectionUI() {
-    const def = TOWER_TYPES[selectedType];
-    if (!def) return;
-    if (selectedNameEl) selectedNameEl.textContent = def.name;
-    if (selectedCostEl) selectedCostEl.textContent = def.cost;
+    const baseType = selectedType;
+    const def = TOWER_TYPES[baseType] || {};
+    const path = getPathForBase(baseType);
+    const t1 = path && path.tiers[0];
+
+    if (selectedNameEl) selectedNameEl.textContent = t1 ? t1.name : (def.name || baseType);
+    if (selectedCostEl) selectedCostEl.textContent = t1 ? t1.total_cost : (def.cost || 0);
 
     // Enhanced HUD portrait and stats
-    const ui = TOWER_UI[selectedType] || {};
-    if (selectedEmojiEl && ui.emoji) selectedEmojiEl.textContent = ui.emoji;
-    if (selectedTowerLabelEl) selectedTowerLabelEl.textContent = def.name;
+    const ui = TOWER_UI[baseType] || {};
+    if (selectedEmojiEl) {
+      if (window.Sprites) {
+        const url = Sprites.getTowerPortrait(baseType, 72);
+        selectedEmojiEl.classList.add('is-portrait');
+        selectedEmojiEl.style.backgroundImage = `url(${url})`;
+        selectedEmojiEl.style.backgroundSize = 'contain';
+        selectedEmojiEl.style.backgroundRepeat = 'no-repeat';
+        selectedEmojiEl.style.backgroundPosition = 'center';
+        selectedEmojiEl.textContent = '';
+      } else if (ui.emoji) {
+        selectedEmojiEl.textContent = ui.emoji;
+      }
+    }
+    if (selectedTowerLabelEl) selectedTowerLabelEl.textContent = t1 ? t1.name : (def.name || baseType);
 
     // Range bar: normalize against ~200 as soft cap
     const maxRange = 200;
-    const rangePct = clamp(def.range / maxRange, 0, 1) * 100;
+    const rangePct = clamp((def.range || 0) / maxRange, 0, 1) * 100;
     if (statRangeEl) statRangeEl.style.width = rangePct.toFixed(0) + '%';
-    if (statRangeValueEl) statRangeValueEl.textContent = def.range;
+    if (statRangeValueEl) statRangeValueEl.textContent = def.range || 0;
 
     // Power bar: 1..10 scale
     const power = clamp((ui.power || 1), 1, 10);
@@ -1580,13 +1770,21 @@
     if (statPowerEl) statPowerEl.style.width = powerPct.toFixed(0) + '%';
     if (statPowerValueEl) statPowerValueEl.textContent = power;
 
-    // Buttons: selected/locked state
-    towerButtons.forEach(b=>{
+    // Buttons: selected/locked state, using Tier-1 total cost
+    document.querySelectorAll('.towerBtn').forEach(b => {
       const t = b.getAttribute('data-type');
       b.classList.toggle('selected', t === selectedType);
-      const c = TOWER_TYPES[t].cost;
-      b.classList.toggle('locked', money < c);
+      const pid = b.getAttribute('data-path-id');
+      const p = pid ? PATH_BY_ID.get(pid) : getPathForBase(t);
+      const cost = p?.tiers?.[0]?.total_cost || (TOWER_TYPES[t]?.cost || 0);
+      const affordable = money >= cost;
+      b.classList.toggle('locked', !affordable);
+      const costEl = b.querySelector('.cost');
+      if (costEl) costEl.textContent = cost;
     });
+
+    // Update upgrade panel for selected placed tower
+    updateUpgradePanel();
   }
 
   function placeTower(type,x,y) {
@@ -1599,6 +1797,7 @@
       case 'Dilophosaurus':  tower = new DilophosaurusTower(x,y); break;
       case 'Stegosaurus':    tower = new StegosaurusTower(x,y); break;
       case 'Iguanodon':      tower = new IguanodonTower(x,y); break;
+      case 'Maiasaura':      tower = new MaiasauraTower(x,y); break;
       case 'Stonklodon':     tower = new StonklodonTower(x,y); break;
       case 'TRex':           tower = new TRexTower(x,y); break;
       case 'Spinosaurus':    tower = new SpinosaurusTower(x,y); break;
@@ -1608,8 +1807,30 @@
       case 'Quetzalcoatlus': tower = new QuetzalcoatlusTower(x,y); break;
       default:               tower = new RaptorNestTower(x,y); break;
     }
-    towers.push(tower);
-  }
+    // Attach sprite instance for on-canvas rendering (idle/attack animation)
+   if (window.Sprites && tower) {
+     try {
+       tower.sprite = Sprites.createInstance('tower:' + (type || 'RaptorNest'), { variantSeed: Math.floor(x * 97 + y * 131) });
+       tower.attackAnimTimer = 0;
+     } catch(e) { /* no-op */ }
+   }
+
+   // Attach upgrade path metadata to the placed tower
+   const path = getPathForBase(type);
+   if (path && path.tiers && path.tiers.length) {
+     tower._pathId = path.id;
+     tower._tier = 1;
+     tower._tierName = path.tiers[0].name;
+     tower._tierTotalCost = path.tiers[0].total_cost;
+   } else {
+     tower._pathId = null;
+     tower._tier = 1;
+     tower._tierName = (TOWER_TYPES[type]?.name) || type;
+     tower._tierTotalCost = (TOWER_TYPES[type]?.cost) || 0;
+   }
+
+   towers.push(tower);
+ }
 
   let infoTimeout = null;
   function infoTemp(msg, ms=900) {
@@ -1679,8 +1900,44 @@
   function update(dt) {
     // Update enemies
     for (const e of enemies) e.update(dt);
+
+    // --- Support auras pre-pass (e.g., Maiasaura haste) ---
+    // Initialize base fire rates if needed and reset any prior buffs
+    for (const t of towers) {
+      if (typeof t.fireRate === 'number' && typeof t._baseFireRate !== 'number') t._baseFireRate = t.fireRate;
+      if (typeof t._baseFireRate === 'number') t.fireRate = t._baseFireRate;
+      t._buffApplied = false;
+    }
+    // Apply Maiasaura auras (stack by taking the fastest/new minimum fireRate)
+    for (const src of towers) {
+      if (src instanceof MaiasauraTower) {
+        for (const tgt of towers) {
+          if (tgt === src) continue;
+          if (typeof tgt._baseFireRate === 'number') {
+            const dx = (tgt.x - src.x), dy = (tgt.y - src.y);
+            if ((dx*dx + dy*dy) <= (src.range * src.range)) {
+              const newRate = tgt._baseFireRate * src.buffMult;
+              if (!tgt._buffApplied || newRate < tgt.fireRate) {
+                tgt.fireRate = newRate;
+                tgt._buffApplied = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Update towers
     for (const t of towers) t.update(dt, enemies);
+
+    // Update tower sprites (idle/attack state)
+    for (const t of towers) {
+      if (t && t.sprite) {
+        t.attackAnimTimer = Math.max(0, (t.attackAnimTimer || 0) - dt);
+        t.sprite.state = (t.attackAnimTimer > 0 ? 'attack' : 'idle');
+        t.sprite.update(dt);
+      }
+    }
     // Projectiles/effects
     for (const p of raptorLeaps) p.update(dt);
     for (const r of rushStrikes) r.update(dt);
@@ -1725,7 +1982,19 @@
     for (const a of acidPools) a.draw(ctx);
 
     // Towers
-    for (const t of towers) t.draw(ctx);
+    for (const t of towers) {
+      if (t && t.sprite) {
+        t.sprite.draw(ctx, t.x, t.y, 0, 1);
+        if (gameSettings.showRanges) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(120,200,160,0.08)';
+          ctx.beginPath(); ctx.arc(t.x, t.y, t.range, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        }
+      } else {
+        t.draw(ctx);
+      }
+    }
     // Enemies
     for (const e of enemies) e.draw(ctx);
 
@@ -1830,6 +2099,64 @@
 
   // Initial UI sync
   updateHUD();
+
+  // Create upgrade panel in HUD (for placed tower upgrades)
+  const hudEl = document.getElementById('hud');
+  upgradePanelEl = document.createElement('div');
+  upgradePanelEl.id = 'upgradePanel';
+  upgradePanelEl.className = 'context-panel';
+  upgradePanelEl.style.display = 'none';
+  upgradePanelEl.innerHTML = `
+    <div class="context-row">
+      <strong>Upgrade</strong>
+    </div>
+    <div class="context-row">
+      <div id="upgradeInfo" style="flex:1; font-size:13px;"></div>
+      <button id="upgradeBtn" class="btn-primary">Upgrade</button>
+    </div>
+  `;
+  if (hudEl) hudEl.insertBefore(upgradePanelEl, hudEl.children[1] || null);
+  const upgradeInfoEl = document.getElementById('upgradeInfo');
+  const upgradeBtnEl = document.getElementById('upgradeBtn');
+
+  function updateUpgradePanel(forceShow=false) {
+    if (!upgradePanelEl) return;
+    if (!selectedTower || !selectedTower._pathId) {
+      upgradePanelEl.style.display = 'none';
+      return;
+    }
+    const info = getUpgradeInfoForTower(selectedTower);
+    if (!info) { upgradePanelEl.style.display = 'none'; return; }
+    const { path, curr, next, upgradeCost } = info;
+    let text = `Tier ${curr.tier}: ${curr.name}`;
+    if (next) {
+      text += ` → Tier ${next.tier}: ${next.name} (Upgrade: ${upgradeCost})`;
+      upgradeBtnEl.disabled = money < upgradeCost;
+      upgradeBtnEl.textContent = `Upgrade (${upgradeCost})`;
+    } else {
+      text += ` — Max Tier`;
+      upgradeBtnEl.disabled = true;
+      upgradeBtnEl.textContent = 'Maxed';
+    }
+    if (upgradeInfoEl) upgradeInfoEl.textContent = text;
+    upgradePanelEl.style.display = 'block';
+  }
+
+  if (upgradeBtnEl) {
+    upgradeBtnEl.addEventListener('click', () => {
+      const info = getUpgradeInfoForTower(selectedTower);
+      if (!info || !info.next) return;
+      const { next, upgradeCost } = info;
+      if (money < upgradeCost) { infoTemp('Not enough money'); return; }
+      money -= upgradeCost;
+      // Advance tier metadata
+      selectedTower._tier = next.tier;
+      selectedTower._tierName = next.name;
+      selectedTower._tierTotalCost = next.total_cost;
+      updateHUD();
+      infoTemp(`Upgraded to ${next.name}`);
+    });
+  }
 
   // Utility to hide main menu and any open modals/tooltips
   function hideMainMenuAndModals() {
@@ -2122,6 +2449,8 @@
   
   // Load tips on startup
   loadTips();
+  // Load upgrade paths and rebuild shop to base-only (Tier-1)
+  loadUpgradeData();
 
   // show main menu by default (game hidden until play)
   if (mainMenuEl) {
