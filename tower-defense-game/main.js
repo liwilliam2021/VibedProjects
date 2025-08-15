@@ -4,6 +4,32 @@
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   let W = canvas.width, H = canvas.height;
+  // Pixel-art rendering: disable smoothing for crisp pixels
+  try { ctx.imageSmoothingEnabled = false; } catch(e) {}
+  try { ctx.imageSmoothingQuality = 'low'; } catch(e) {}
+  // Lightweight camera for smooth offsets and screen shake
+  const camera = {
+    x: 0, y: 0,
+    targetX: 0, targetY: 0,
+    shakeTimer: 0, shakeMag: 0,
+    update(dt) {
+      if (this.shakeTimer > 0) {
+        this.shakeTimer = Math.max(0, this.shakeTimer - dt);
+      }
+    },
+    getOffset() {
+      if (this.shakeTimer <= 0) return { ox: 0, oy: 0 };
+      const progress = this.shakeTimer;
+      const mag = this.shakeMag * (progress / Math.max(progress, 0.0001));
+      return { ox: (Math.random() * 2 - 1) * mag, oy: (Math.random() * 2 - 1) * mag };
+    },
+    shake(mag = 6, dur = 0.18) {
+      this.shakeMag = Math.max(this.shakeMag, mag);
+      this.shakeTimer = Math.max(this.shakeTimer, dur);
+    }
+  };
+  // Expose a helper so effects.js can trigger camera shakes
+  window._shakeCamera = function (mag, dur) { camera.shake(mag, dur); };
 
   const moneyEl = document.getElementById('money');
   const livesEl = document.getElementById('lives');
@@ -176,6 +202,15 @@
     if (confirmPlacementCheck) confirmPlacementCheck.checked = gameSettings.confirmPlacement;
     if (gridSnapCheck) gridSnapCheck.checked = gameSettings.gridSnap;
     if (keyboardShortcutsCheck) keyboardShortcutsCheck.checked = gameSettings.keyboardShortcuts;
+
+    // Ensure VFX flags follow saved settings (if VFX is available)
+    if (window.VFX && typeof VFX.setFlags === 'function') {
+      VFX.setFlags({
+        particles: !!gameSettings.particleEffects,
+        showDamageNumbers: !!gameSettings.showDamageNumbers,
+        screenShake: !!gameSettings.screenShake
+      });
+    }
   }
  
   let money = gameSettings.startingMoney, lives = gameSettings.startingLives, wave = 0;
@@ -605,6 +640,11 @@
     die() {
       if (!this.alive) return;
       this.alive = false;
+      // VFX on death: burst + small shake
+      if (window.VFX) {
+        VFX.deathBurst(this.x, this.y);
+        VFX.shakeCamera(8, 0.12);
+      }
       const diffMods = getDifficultyModifiers();
       money += Math.round(10 * diffMods.moneyMult);
     }
@@ -1429,6 +1469,12 @@
       if (Math.hypot(this.x-this.target.x, this.y-this.target.y) < this.target.radius+8) {
         this.target.takeDamage(this.impact);
         this.target.applyBleed(this.bleedDps, this.bleedDur);
+        // VFX: hit spark and damage number; small shake based on impact
+        if (window.VFX) {
+          VFX.hitSpark(this.x, this.y, this.impact);
+          VFX.spawnDamageNumber(this.target.x, this.target.y - 8, this.impact);
+          VFX.shakeCamera(Math.min(10, Math.max(2, this.impact * 0.12)), 0.08);
+        }
         this.alive = false;
       }
       if (this.x< -40 || this.x>W+40 || this.y< -40 || this.y>H+40) this.alive=false;
@@ -1469,6 +1515,11 @@
           e.takeDamage(this.damage);
           e.applyStun(this.stunDur);
           e.knockback(this.knockback);
+          // VFX: spark + damage number
+          if (window.VFX) {
+            VFX.hitSpark(e.x, e.y, this.damage);
+            VFX.spawnDamageNumber(e.x, e.y - 6, this.damage);
+          }
           this.hitSet.add(e.id);
         }
       }
@@ -1507,6 +1558,11 @@
       if (Math.hypot(this.x-this.target.x, this.y-this.target.y) < this.target.radius+6) {
         this.target.takeDamage(this.impact);
         if (this.onExplode) this.onExplode(this.x, this.y);
+        // VFX: acid splash + damage number
+        if (window.VFX) {
+          VFX.acidSplash(this.x, this.y);
+          VFX.spawnDamageNumber(this.target.x, this.target.y - 6, this.impact);
+        }
         this.alive=false;
       }
       if (this.x< -40 || this.x>W+40 || this.y< -40 || this.y>H+40) this.alive=false;
@@ -1568,6 +1624,11 @@
         if (!e.alive) continue;
         if (Math.hypot(e.x-this.x, e.y-this.y) < e.radius+4) {
           e.takeDamage(this.damage);
+          // VFX
+          if (window.VFX) {
+            VFX.hitSpark(e.x, e.y, this.damage);
+            VFX.spawnDamageNumber(e.x, e.y - 6, this.damage);
+          }
           this.pierce -= 1;
           if (this.pierce <= 0) { this.alive=false; break; }
         }
@@ -1945,6 +2006,12 @@
     for (const a of acidPools) a.update(dt);
     for (const sp of spikes) sp.update(dt);
 
+    // Update visual effects module (particles, damage numbers, flashes)
+    if (window.VFX && typeof VFX.update === 'function') VFX.update(dt);
+
+    // Update camera (for shake)
+    if (typeof camera !== 'undefined' && camera && typeof camera.update === 'function') camera.update(dt);
+
     // Auto next wave scheduling
     if (!spawning && enemies.length === 0 && autoNextEl && autoNextEl.checked) {
       if (!autoNextTimerId) {
@@ -1975,6 +2042,12 @@
 
   function draw() {
     ctx.clearRect(0,0,W,H);
+
+    // Apply camera offset (shake) for world rendering
+    const camOffset = (typeof camera !== 'undefined' && camera && typeof camera.getOffset === 'function') ? camera.getOffset() : { ox: 0, oy: 0 };
+    ctx.save();
+    ctx.translate(camOffset.ox, camOffset.oy);
+
     // Draw path — outer and inner strokes for dino theme
     drawPath();
 
@@ -2004,7 +2077,15 @@
     for (const s of spits) s.draw(ctx);
     for (const sp of spikes) sp.draw(ctx);
 
-    // Placement preview
+    // Finish world transform
+    ctx.restore();
+
+    // Draw VFX above the world (damage numbers, particles, flashes)
+    if (window.VFX && typeof VFX.draw === 'function') {
+      VFX.draw(ctx);
+    }
+
+    // Placement preview (screen-space)
     if (previewPos) {
       const def = TOWER_TYPES[selectedType];
       const x=previewPos.x, y=previewPos.y;
@@ -2406,6 +2487,14 @@
         gameSettings.keyboardShortcuts = keyboardShortcutsCheck.checked;
         
         saveSettings();
+        // Sync VFX flags immediately after saving settings
+        if (window.VFX && typeof VFX.setFlags === 'function') {
+          VFX.setFlags({
+            particles: !!gameSettings.particleEffects,
+            showDamageNumbers: !!gameSettings.showDamageNumbers,
+            screenShake: !!gameSettings.screenShake
+          });
+        }
         infoTemp('Settings saved!', 1500);
         
         // Close modal
