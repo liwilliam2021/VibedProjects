@@ -246,72 +246,633 @@
   }
 
   function drawTowerSilhouette(c, size, towerType, phase = 0, mode = 'idle') {
+    // Performance constants
+    const MAX_SHAPES_PER_TYPE = 9;
+    const USE_INTEGER_COORDS = true;
+    
     const [hue, sat, light] = getTowerBaseColor(towerType);
     const body = hsl(hue, sat, light);
     const accent = hsl((hue + 40) % 360, sat + 10, clamp(light + 10, 0, 100));
+    const detail = hsl((hue + 20) % 360, sat - 10, clamp(light - 10, 0, 100));
     const bob = mode === 'idle' ? Math.sin(phase) * 1.0 : Math.sin(phase * 2) * 0.5;
 
     c.save();
-    c.translate(size / 2, size / 2 + bob);
+    c.translate(Math.floor(size / 2), Math.floor(size / 2 + bob));
 
     c.fillStyle = body;
 
     switch (towerType) {
       case 'RaptorNest':
+        // Enhanced RaptorNest with nest twigs, egg crack, peeking eyes
+        // Nest base
         c.beginPath(); c.arc(0, 8, 14, 0, Math.PI * 2); c.fill();
-        c.fillStyle = accent; c.beginPath(); c.ellipse(0, -2, 8, 10 + (mode==='attack'?1:0), 0, 0, Math.PI * 2); c.fill();
+        
+        // Three nest twigs (thin rectangles around base)
+        c.fillStyle = detail;
+        c.save();
+        c.translate(0, 8);
+        c.rotate(-0.3);
+        c.fillRect(-12, -1, 24, 2);
+        c.restore();
+        c.save();
+        c.translate(0, 8);
+        c.rotate(0.3);
+        c.fillRect(-12, -1, 24, 2);
+        c.restore();
+        c.fillRect(-10, 6, 20, 2);
+        
+        // Egg
+        c.fillStyle = accent;
+        c.beginPath();
+        c.ellipse(0, -2, 8, 10 + (mode==='attack'?1:0), 0, 0, Math.PI * 2);
+        c.fill();
+        
+        // Egg crack hint (zigzag line)
+        c.strokeStyle = detail;
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(-3, -2);
+        c.lineTo(-1, 0);
+        c.lineTo(1, -2);
+        c.lineTo(3, 0);
+        c.stroke();
+        
+        // Two peeking eyes in the egg
+        c.fillStyle = 'black';
+        c.beginPath(); c.arc(-2, -4, 1, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(2, -4, 1, 0, Math.PI * 2); c.fill();
         break;
       case 'Triceratops':
-        c.beginPath(); c.moveTo(0, -12); c.lineTo(16, 10); c.lineTo(-16, 10); c.closePath(); c.fill();
-        c.fillStyle = accent; c.fillRect(-3, -6 + (mode==='attack' ? -1 : 0), 6, 8);
+        // Enhanced Triceratops with triangular horns, frill arc, and eye
+        // Main body
+        c.beginPath(); c.ellipse(0, 4, 12, 10, 0, 0, Math.PI * 2); c.fill();
+        
+        // Frill arc (behind head)
+        c.fillStyle = accent;
+        c.beginPath();
+        c.arc(0, -4, 14, Math.PI * 1.2, Math.PI * 1.8);
+        c.arc(0, -4, 10, Math.PI * 1.8, Math.PI * 1.2, true);
+        c.closePath();
+        c.fill();
+        
+        // Head
+        c.fillStyle = body;
+        c.beginPath(); c.arc(0, -2, 8, 0, Math.PI * 2); c.fill();
+        
+        // Three triangular horns
+        c.fillStyle = detail;
+        // Center horn (nasal)
+        c.beginPath();
+        c.moveTo(0, -4);
+        c.lineTo(-2, 0);
+        c.lineTo(2, 0);
+        c.closePath();
+        c.fill();
+        // Left brow horn
+        c.beginPath();
+        c.moveTo(-5, -6 + (mode==='attack' ? -1 : 0));
+        c.lineTo(-7, -2);
+        c.lineTo(-3, -2);
+        c.closePath();
+        c.fill();
+        // Right brow horn
+        c.beginPath();
+        c.moveTo(5, -6 + (mode==='attack' ? -1 : 0));
+        c.lineTo(3, -2);
+        c.lineTo(7, -2);
+        c.closePath();
+        c.fill();
+        
+        // Eye
+        c.fillStyle = 'rgba(255,255,255,0.8)';
+        c.beginPath(); c.arc(-3, -2, 2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'black';
+        c.beginPath(); c.arc(-3, -2, 1, 0, Math.PI * 2); c.fill();
         break;
       case 'Brachiosaurus':
-        c.beginPath(); c.ellipse(0, 8, 16, 10, 0, 0, Math.PI * 2); c.fill();
-        c.fillRect(-4, -10, 8, 16);
-        c.beginPath(); c.arc(8, -10 + (mode==='attack'? -1:0), 8, Math.PI * 0.7, Math.PI * 1.9); c.fill();
+        // Enhanced Brachiosaurus with columnar legs, tail, nasal crest
+        // Body
+        c.beginPath(); c.ellipse(0, 6, 14, 10, 0, 0, Math.PI * 2); c.fill();
+        
+        // Two columnar legs (visible)
+        c.fillStyle = detail;
+        c.fillRect(-8, 10, 5, 6);
+        c.fillRect(3, 10, 5, 6);
+        
+        // Long neck
+        c.fillStyle = body;
+        c.fillRect(-3, -8, 6, 14);
+        
+        // Head with nasal crest bump
+        c.beginPath();
+        c.arc(4, -10 + (mode==='attack'? -1:0), 6, 0, Math.PI * 2);
+        c.fill();
+        
+        // Nasal crest bump
+        c.fillStyle = accent;
+        c.beginPath();
+        c.arc(6, -12 + (mode==='attack'? -1:0), 3, Math.PI * 1.2, Math.PI * 0.2);
+        c.fill();
+        
+        // Tail
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-10, 4);
+        c.lineTo(-14, 8);
+        c.lineTo(-12, 10);
+        c.lineTo(-8, 6);
+        c.closePath();
+        c.fill();
         break;
       case 'Dilophosaurus':
-        c.beginPath(); c.moveTo(0, -14); c.lineTo(12 + (mode==='attack'?2:0), 0); c.lineTo(-12 - (mode==='attack'?2:0), 0); c.closePath(); c.fill();
-        c.fillStyle = accent; c.fillRect(-10, 0, 20, 10);
+        // Enhanced Dilophosaurus with dual head crests, beak-like snout, tail
+        // Body
+        c.fillRect(-10, 0, 20, 10);
+        
+        // Head with beak-like snout
+        c.fillStyle = body;
+        c.beginPath();
+        c.arc(8, -4, 6, 0, Math.PI * 2);
+        c.fill();
+        
+        // Beak-like snout
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(12, -4);
+        c.lineTo(15 + (mode==='attack'?2:0), -3);
+        c.lineTo(15 + (mode==='attack'?2:0), -2);
+        c.lineTo(12, -3);
+        c.closePath();
+        c.fill();
+        
+        // Dual head crests (2 arcs/triangles)
+        c.fillStyle = accent;
+        // Left crest
+        c.beginPath();
+        c.moveTo(6, -8);
+        c.lineTo(4, -12);
+        c.lineTo(8, -10);
+        c.closePath();
+        c.fill();
+        // Right crest
+        c.beginPath();
+        c.moveTo(10, -8);
+        c.lineTo(8, -12);
+        c.lineTo(12, -10);
+        c.closePath();
+        c.fill();
+        
+        // Tail
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-10, 4);
+        c.lineTo(-14, 6);
+        c.lineTo(-12, 8);
+        c.lineTo(-8, 6);
+        c.closePath();
+        c.fill();
         break;
       case 'Stegosaurus':
-        c.fillRect(-14, 0, 28, 12);
+        // Enhanced Stegosaurus with head nub, tail spikes, alternate plate heights
+        // Body
+        c.fillRect(-12, 2, 24, 10);
+        
+        // Head nub
+        c.fillStyle = body;
+        c.beginPath();
+        c.arc(12, 4, 4, 0, Math.PI * 2);
+        c.fill();
+        
+        // Alternating plate heights
         c.fillStyle = accent;
-        for (let i = -2; i <= 2; i++) {
-          c.beginPath(); c.moveTo(i * 6, -2); c.lineTo(i * 6 + 4, -12 - (mode==='attack'?1:0)); c.lineTo(i * 6 + 8, -2); c.closePath(); c.fill();
+        const plateHeights = [8, 12, 10, 12, 8];
+        for (let i = 0; i < 5; i++) {
+          const x = -8 + i * 4;
+          const h = plateHeights[i] + (mode==='attack'?1:0);
+          c.beginPath();
+          c.moveTo(x, 2);
+          c.lineTo(x + 1, -h);
+          c.lineTo(x + 3, -h);
+          c.lineTo(x + 4, 2);
+          c.closePath();
+          c.fill();
         }
+        
+        // Tail with thagomizer (4 spikes)
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-12, 6);
+        c.lineTo(-16, 8);
+        c.lineTo(-14, 10);
+        c.lineTo(-10, 8);
+        c.closePath();
+        c.fill();
+        
+        // Tail spikes
+        c.fillStyle = detail;
+        c.beginPath(); c.moveTo(-14, 8); c.lineTo(-16, 4); c.lineTo(-13, 7); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(-14, 9); c.lineTo(-16, 12); c.lineTo(-13, 9); c.closePath(); c.fill();
         break;
       case 'Iguanodon':
+        // Enhanced Iguanodon with split thumb spike, head beak, tail
+        // Body
         c.fillRect(-12, -4, 24, 12);
-        c.fillStyle = accent; c.fillRect(6, -2, 8 + (mode==='attack'?2:0), 4);
+        
+        // Head with beak
+        c.fillStyle = accent;
+        c.beginPath();
+        c.arc(10, -2, 5, 0, Math.PI * 2);
+        c.fill();
+        
+        // Beak
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(13, -2);
+        c.lineTo(16 + (mode==='attack'?2:0), -1);
+        c.lineTo(16 + (mode==='attack'?2:0), 0);
+        c.lineTo(13, -1);
+        c.closePath();
+        c.fill();
+        
+        // Split thumb spike (2 triangles for taper)
+        c.fillStyle = detail;
+        // Upper spike
+        c.beginPath();
+        c.moveTo(6, 2);
+        c.lineTo(4, -2);
+        c.lineTo(8, 0);
+        c.closePath();
+        c.fill();
+        // Lower spike
+        c.beginPath();
+        c.moveTo(6, 4);
+        c.lineTo(4, 0);
+        c.lineTo(8, 2);
+        c.closePath();
+        c.fill();
+        
+        // Tail
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-12, 0);
+        c.lineTo(-16, 2);
+        c.lineTo(-14, 4);
+        c.lineTo(-10, 2);
+        c.closePath();
+        c.fill();
         break;
       case 'Stonklodon':
-        c.beginPath(); c.arc(0, 0, 14, 0, Math.PI * 2); c.fill();
-        c.fillStyle = accent; c.beginPath(); c.arc(-4, -4, 6 + (mode==='attack'?0.5:0), 0, Math.PI * 2); c.fill();
+        // Enhanced Stonklodon (economy coin) with embossed dino relief, edge rim
+        // Coin base with edge rim effect
+        c.fillStyle = detail;
+        c.beginPath(); c.arc(0, 0, 15, 0, Math.PI * 2); c.fill();
+        c.fillStyle = body;
+        c.beginPath(); c.arc(0, 0, 13, 0, Math.PI * 2); c.fill();
+        
+        // Inner coin face
+        c.fillStyle = accent;
+        c.beginPath(); c.arc(-4, -4, 6 + (mode==='attack'?0.5:0), 0, Math.PI * 2); c.fill();
+        
+        // Embossed dino relief (small triangle head + tiny tail inside coin)
+        c.fillStyle = detail;
+        // Dino head triangle
+        c.beginPath();
+        c.moveTo(-2, -2);
+        c.lineTo(2, -1);
+        c.lineTo(0, 1);
+        c.closePath();
+        c.fill();
+        // Tiny tail
+        c.beginPath();
+        c.moveTo(0, 1);
+        c.lineTo(-3, 3);
+        c.lineTo(-2, 4);
+        c.lineTo(0, 2);
+        c.closePath();
+        c.fill();
         break;
       case 'TRex':
-        c.beginPath(); c.moveTo(0, -14); c.lineTo(14 + (mode==='attack'?2:0), 8); c.lineTo(-14 - (mode==='attack'?2:0), 8); c.closePath(); c.fill();
-        c.fillStyle = accent; c.fillRect(-3, -6, 6, 8);
+        // Enhanced T-Rex with jaw separation, teeth, eye, arm stubs, tail
+        // Main body
+        c.beginPath(); c.ellipse(0, 4, 10, 12, 0, 0, Math.PI * 2); c.fill();
+        
+        // Tail
+        c.beginPath();
+        c.moveTo(-8, 2);
+        c.lineTo(-14, 6);
+        c.lineTo(-12, 10);
+        c.lineTo(-6, 6);
+        c.closePath();
+        c.fill();
+        
+        // Head with separated jaws
+        const jawOffset = mode === 'attack' ? 2 : 0;
+        // Upper jaw
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(4, -8);
+        c.lineTo(12 + jawOffset, -4);
+        c.lineTo(12 + jawOffset, -2);
+        c.lineTo(4, -4);
+        c.closePath();
+        c.fill();
+        
+        // Lower jaw
+        c.beginPath();
+        c.moveTo(4, -4);
+        c.lineTo(12 + jawOffset, -2);
+        c.lineTo(12 + jawOffset, 2 + jawOffset);
+        c.lineTo(4, 0);
+        c.closePath();
+        c.fill();
+        
+        // Teeth (2-3 visible) - using detail color
+        c.fillStyle = detail;
+        c.beginPath(); c.moveTo(10 + jawOffset, -3); c.lineTo(11 + jawOffset, -1); c.lineTo(9 + jawOffset, -2); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(8 + jawOffset, -3); c.lineTo(9 + jawOffset, -1); c.lineTo(7 + jawOffset, -2); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(10 + jawOffset, 0); c.lineTo(11 + jawOffset, -2); c.lineTo(9 + jawOffset, -1); c.closePath(); c.fill();
+        
+        // Eye
+        c.fillStyle = accent;
+        c.beginPath(); c.arc(2, -6, 2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'black';
+        c.beginPath(); c.arc(2, -6, 1, 0, Math.PI * 2); c.fill();
+        
+        // Two arm stubs
+        c.fillStyle = detail;
+        c.fillRect(4, 2, 3, 2);
+        c.fillRect(4, 5, 3, 2);
         break;
       case 'Spinosaurus':
-        c.beginPath(); c.moveTo(-10, 8); c.lineTo(-6, -10 - (mode==='attack'?1:0)); c.lineTo(0, 8); c.closePath(); c.fill();
-        c.fillStyle = accent; c.fillRect(-12, 4, 24, 8);
+        // Enhanced Spinosaurus with elongated snout, sail spines, tail paddle
+        // Body
+        c.fillRect(-12, 4, 24, 8);
+        
+        // Sail with spines
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-10, 4);
+        c.lineTo(-6, -10 - (mode==='attack'?1:0));
+        c.lineTo(0, 4);
+        c.closePath();
+        c.fill();
+        
+        // 2 sail spines along the sail
+        c.fillStyle = detail;
+        c.fillRect(-7, -4, 2, 8);
+        c.fillRect(-3, -6, 2, 10);
+        
+        // Elongated snout
+        c.fillStyle = accent;
+        c.beginPath();
+        c.moveTo(10, 6);
+        c.lineTo(16, 5);
+        c.lineTo(16, 7);
+        c.lineTo(10, 8);
+        c.closePath();
+        c.fill();
+        
+        // Tail with paddle hint
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-12, 6);
+        c.lineTo(-16, 7);
+        c.lineTo(-15, 9);
+        c.lineTo(-11, 8);
+        c.closePath();
+        c.fill();
         break;
       case 'Pteranodon':
+        // Enhanced Pteranodon with proper beak, head crest backward, tail vane
+        // Wings
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-14 - (mode==='attack'?2:0), 4);
+        c.lineTo(0, -8);
+        c.lineTo(14 + (mode==='attack'?2:0), 4);
+        c.lineTo(0, 2);
+        c.closePath();
+        c.fill();
+        
+        // Body
+        c.beginPath(); c.ellipse(0, 0, 4, 6, 0, 0, Math.PI * 2); c.fill();
+        
+        // Head with beak
+        c.fillStyle = accent;
+        c.beginPath(); c.arc(0, -8, 4, 0, Math.PI * 2); c.fill();
+        
+        // Proper beak
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(2, -8);
+        c.lineTo(6, -7);
+        c.lineTo(6, -6);
+        c.lineTo(2, -7);
+        c.closePath();
+        c.fill();
+        
+        // Head crest pointing backward
+        c.fillStyle = accent;
+        c.beginPath();
+        c.moveTo(-2, -9);
+        c.lineTo(-6, -10);
+        c.lineTo(-5, -8);
+        c.lineTo(-1, -8);
+        c.closePath();
+        c.fill();
+        
+        // Tail vane
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(0, 4);
+        c.lineTo(-2, 8);
+        c.lineTo(0, 7);
+        c.lineTo(2, 8);
+        c.closePath();
+        c.fill();
+        break;
       case 'Quetzalcoatlus':
-        c.beginPath(); c.moveTo(-12 - (mode==='attack'?2:0), 4); c.lineTo(0, -16); c.lineTo(12 + (mode==='attack'?2:0), 4); c.closePath(); c.fill();
-        c.fillStyle = accent; c.fillRect(-3, -16, 6, 6);
+        // Enhanced Quetzalcoatlus with backward head crest, tucked hind legs, tail vane
+        // Wings
+        c.beginPath();
+        c.moveTo(-12 - (mode==='attack'?2:0), 4);
+        c.lineTo(0, -16);
+        c.lineTo(12 + (mode==='attack'?2:0), 4);
+        c.closePath();
+        c.fill();
+        
+        // Head/neck
+        c.fillStyle = accent;
+        c.fillRect(-3, -16, 6, 6);
+        
+        // Backward head crest
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(-2, -15);
+        c.lineTo(-6, -14);
+        c.lineTo(-5, -12);
+        c.lineTo(-1, -13);
+        c.closePath();
+        c.fill();
+        
+        // Two tiny triangles for tucked hind legs
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(-2, 2);
+        c.lineTo(-4, 4);
+        c.lineTo(-1, 4);
+        c.closePath();
+        c.fill();
+        c.beginPath();
+        c.moveTo(2, 2);
+        c.lineTo(1, 4);
+        c.lineTo(4, 4);
+        c.closePath();
+        c.fill();
+        
+        // Tail vane
+        c.fillStyle = accent;
+        c.beginPath();
+        c.moveTo(0, 4);
+        c.lineTo(-2, 8);
+        c.lineTo(0, 7);
+        c.lineTo(2, 8);
+        c.closePath();
+        c.fill();
         break;
       case 'Ankylosaurus':
-        c.fillRect(-14, -6, 28, 12);
-        c.fillStyle = accent; c.fillRect(-10, -10, 20, 8 + (mode==='attack'?1:0));
+        // Enhanced Ankylosaurus with tail club, shell scutes, head wedge, side spikes
+        // Body
+        c.fillRect(-14, -2, 28, 10);
+        
+        // Shell with scutes
+        c.fillStyle = accent;
+        c.fillRect(-10, -8, 20, 8 + (mode==='attack'?1:0));
+        
+        // 3 shell scutes (small rectangles)
+        c.fillStyle = detail;
+        c.fillRect(-6, -6, 3, 3);
+        c.fillRect(-1, -7, 3, 3);
+        c.fillRect(4, -6, 3, 3);
+        
+        // Head wedge
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(14, 0);
+        c.lineTo(10, -4);
+        c.lineTo(10, 4);
+        c.closePath();
+        c.fill();
+        
+        // Side spikes (optional, small)
+        c.fillStyle = detail;
+        c.beginPath(); c.moveTo(-10, -4); c.lineTo(-12, -6); c.lineTo(-9, -5); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(10, -4); c.lineTo(12, -6); c.lineTo(9, -5); c.closePath(); c.fill();
+        
+        // Tail with club (circle)
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-14, 2);
+        c.lineTo(-18, 3);
+        c.lineTo(-16, 5);
+        c.lineTo(-12, 4);
+        c.closePath();
+        c.fill();
+        
+        // Tail club
+        c.fillStyle = detail;
+        c.beginPath();
+        c.arc(-18, 4, 3, 0, Math.PI * 2);
+        c.fill();
         break;
       case 'Dreadnoughtus':
-        c.fillRect(-18, -8, 36, 16);
-        c.fillStyle = accent; c.fillRect(-12, -14, 24, 8);
+        // Enhanced Dreadnoughtus with tail, forelimb columns, head ellipse
+        // Main body
+        c.fillRect(-12, -2, 24, 12);
+        
+        // Neck
+        c.fillStyle = accent;
+        c.fillRect(-2, -10, 8, 10);
+        
+        // Head ellipse at neck end
+        c.fillStyle = body;
+        c.beginPath();
+        c.ellipse(4, -12 - (mode==='attack'?1:0), 5, 4, 0, 0, Math.PI * 2);
+        c.fill();
+        
+        // Two forelimb columns
+        c.fillStyle = detail;
+        c.fillRect(-8, 8, 4, 8);
+        c.fillRect(4, 8, 4, 8);
+        
+        // Long slender tail triangle
+        c.fillStyle = body;
+        c.beginPath();
+        c.moveTo(-12, 2);
+        c.lineTo(-18, 4);
+        c.lineTo(-16, 8);
+        c.lineTo(-10, 4);
+        c.closePath();
+        c.fill();
         break;
       case 'Protoceratops':
+        // Enhanced Protoceratops with frill scallops, beak, eye, tail nub
+        // Body
+        c.beginPath();
+        c.ellipse(0, 4, 10, 8, 0, 0, Math.PI * 2);
+        c.fill();
+        
+        // Frill shield
+        c.fillStyle = accent;
+        c.beginPath();
+        c.moveTo(-8, -2);
+        c.lineTo(-6, -10 + (mode==='attack'?-1:0));
+        c.lineTo(0, -12 + (mode==='attack'?-1:0));
+        c.lineTo(6, -10 + (mode==='attack'?-1:0));
+        c.lineTo(8, -2);
+        c.lineTo(0, 0);
+        c.closePath();
+        c.fill();
+        
+        // 2 frill scallops on shield edge
+        c.fillStyle = detail;
+        c.beginPath();
+        c.arc(-4, -9 + (mode==='attack'?-1:0), 2, 0, Math.PI * 2);
+        c.fill();
+        c.beginPath();
+        c.arc(4, -9 + (mode==='attack'?-1:0), 2, 0, Math.PI * 2);
+        c.fill();
+        
+        // Head
+        c.fillStyle = body;
+        c.beginPath();
+        c.arc(6, 0, 5, 0, Math.PI * 2);
+        c.fill();
+        
+        // Beak
+        c.fillStyle = detail;
+        c.beginPath();
+        c.moveTo(9, 0);
+        c.lineTo(12 + (mode==='attack'?1:0), 1);
+        c.lineTo(12 + (mode==='attack'?1:0), 2);
+        c.lineTo(9, 1);
+        c.closePath();
+        c.fill();
+        
+        // Eye
+        c.fillStyle = 'rgba(255,255,255,0.8)';
+        c.beginPath(); c.arc(5, -1, 2, 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'black';
+        c.beginPath(); c.arc(5, -1, 1, 0, Math.PI * 2); c.fill();
+        
+        // Tail nub
+        c.fillStyle = body;
+        c.beginPath();
+        c.arc(-10, 4, 3, 0, Math.PI * 2);
+        c.fill();
+        break;
       default:
+        // Default fallback shape
         c.beginPath(); c.moveTo(0, -10); c.lineTo(12 + (mode==='attack'?1:0), 8); c.lineTo(-12 - (mode==='attack'?1:0), 8); c.closePath(); c.fill();
         c.fillStyle = accent; c.fillRect(-5, -6 + (mode==='attack'?-1:0), 10, 6);
         break;
