@@ -1732,11 +1732,11 @@
   });
   canvas.addEventListener('mouseleave', ()=> previewPos = null);
 
-  canvas.addEventListener('click', ()=>{
+  canvas.addEventListener('click', (e)=>{
     if (!previewPos) return;
     const x = previewPos.x, y = previewPos.y;
 
-    // Select a tower if clicking on one (topmost first)
+    // Select a placed tower if clicking on one (topmost first)
     for (let i = towers.length - 1; i >= 0; i--) {
       const t = towers[i];
       if (Math.hypot(t.x - x, t.y - y) <= 18) {
@@ -1747,12 +1747,20 @@
       }
     }
 
+    // If the player hasn't selected a shop tower, nothing to place
+    if (!selectedType) {
+      // no shop selection active; ignore canvas click (or it was a misclick)
+      return;
+    }
+
     if (isOnPath(x, y)) { infoTemp('Cannot place on path'); return; }
+
     const def = TOWER_TYPES[selectedType];
     // Use Tier-1 total cost for purchases
     const p = getPathForBase(selectedType);
     const baseCost = p?.tiers?.[0]?.total_cost ?? def.cost;
     if (money < baseCost) { infoTemp('Not enough money'); return; }
+
     placeTower(selectedType, x, y);
     money -= baseCost;
     updateHUD();
@@ -2086,23 +2094,24 @@
     }
 
     // Placement preview (screen-space)
-    if (previewPos) {
+    // Only show preview when the player has an active shop selection
+    if (previewPos && selectedType) {
       const def = TOWER_TYPES[selectedType];
-      const x=previewPos.x, y=previewPos.y;
-      const valid = !isOnPath(x,y) && money >= def.cost;
+      const x = previewPos.x, y = previewPos.y;
+      const valid = !isOnPath(x, y) && money >= (def?.cost ?? Infinity);
       ctx.save();
       ctx.globalAlpha = 0.9;
       // body preview
       ctx.fillStyle = valid ? 'rgba(100,220,140,0.55)' : 'rgba(220,80,80,0.45)';
-      ctx.translate(x,y);
+      ctx.translate(x, y);
       ctx.rotate(rotatePreview);
-      ctx.fillRect(-14,-14,28,28);
+      ctx.fillRect(-14, -14, 28, 28);
       ctx.restore();
 
       // range
       ctx.save();
       ctx.fillStyle = valid ? 'rgba(120,200,160,0.08)' : 'rgba(200,100,100,0.06)';
-      ctx.beginPath(); ctx.arc(x,y, def.range, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, def.range, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     }
   }
@@ -2532,7 +2541,26 @@
   
   // Initialize options listeners
   setupOptionsListeners();
-  
+
+  // Allow cancelling the current shop selection by clicking elsewhere on the page.
+  // Clicking on the canvas or on a tower button will NOT cancel the selection.
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    // If clicked directly on the canvas (or inside a tower button), do not cancel selection
+    if (target === canvas || (target.closest && target.closest('.towerBtn'))) return;
+    // Ignore clicks inside modals so interaction with menus doesn't cancel selection
+    if (target.closest && target.closest('.modal')) return;
+
+    if (selectedType) {
+      selectedType = null;
+      // clear preview visual state
+      rotatePreview = 0;
+      previewPos = null;
+      updateSelectionUI();
+      infoTemp('Selection canceled', 900);
+    }
+  });
+
   // Load saved settings on startup
   loadSettings();
   
