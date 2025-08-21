@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Star Wars Name Generator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- Animated starfield layers (CSS-only) -->
+    <div class="starfield" aria-hidden="true">
+      <div class="star-layer layer-1"></div>
+      <div class="star-layer layer-2"></div>
+      <div class="star-layer layer-3"></div>
+      <div class="star-layer layer-4"></div>
+      <div class="star-layer layer-5"></div>
+    </div>
+    <!-- Hyperspace burst overlay -->
+    <div id="hyperspace" class="hyperspace" aria-hidden="true"></div>
+  <main class="container">
+    <h1>Star Wars Name Generator</h1>
+    <p class="tagline">Enter your name to forge your identity across the galaxy.</p>
+
+    <form id="nameForm" class="form" autocomplete="off">
+      <label for="realName">Your real name</label>
+      <div class="input-row">
+        <input id="realName" name="realName" type="text" placeholder="e.g., Leia Organa" required />
+        <button id="generateBtn" type="submit">Generate</button>
+      </div>
+      <p class="hint">We only use your input locally to generate names—nothing is sent anywhere.</p>
+    </form>
+
+    <section id="results" class="results hidden">
+      <h2>Your Galactic Aliases</h2>
+      <ul class="cards">
+        <li class="card"><h3>Jedi Name</h3><p id="jediName" class="name"></p></li>
+        <li class="card"><h3>Sith Name</h3><p id="sithName" class="name"></p></li>
+        <li class="card"><h3>Bounty Hunter</h3><p id="hunterName" class="name"></p></li>
+        <li class="card"><h3>Clone Trooper</h3><p id="cloneName" class="name"></p></li>
+        <li class="card"><h3>Droid</h3><p id="droidName" class="name"></p></li>
+      </ul>
+    </section>
+
+    <footer class="footer">
+      <p>Fan-made generator. Star Wars is a trademark of Lucasfilm Ltd.</p>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
